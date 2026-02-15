@@ -1,26 +1,49 @@
 # Python Monorepo Generator
 
-A VS Code extension that generates complete Python monorepo structures with backend, apps, packages, docs, and development configurations.
+A VS Code extension that generates complete Python monorepo structures **or** single Python packages with backend, frontend, mobile, apps, packages, docs, and development configurations.
 
 ## Features
 
-- **Interactive Setup**: Prompts for monorepo name with input validation
+- **Flexible Project Creation**: Choose between complete monorepo or single Python package
+- **Interactive Setup**: Prompts for project name with input validation
 - **Git Integration**: Optional Git initialization with GitHub remote setup
 - **GitHub Ready**: Automatically configures Git with user info and remote repository
-- **Complete Structure**: Creates backend, frontend, mobile, apps, packages, docs, and scripts folders
+- **Complete Monorepo Structure**: Creates backend, frontend, mobile, apps, packages, docs, scripts folders
+- **Lightweight Package Option**: Creates focused Python package with tests and documentation
 - **VS Code Integration**: Includes settings, tasks, and debug configurations
 - **Development Tools**: Pre-configured with Black, isort, MyPy, Flake8, and pytest
-- **Workspace File**: Generates a `.code-workspace` file for optimal development experience
+- **Workspace File**: Generates appropriate project files for optimal development experience
+
+## Project Types
+
+### 🏗️ Complete Monorepo
+Creates a full-featured monorepo with:
+- **Backend**: Python with FastAPI setup and testing
+- **Frontend**: HTML/CSS/JS with Python HTTP server
+- **Mobile**: React Native with navigation and API service
+- **Apps**: Folder for standalone applications
+- **Packages**: Shared/reusable packages
+- **Docs**: Documentation structure
+- **Scripts**: Utility scripts
+
+### 📦 Python Package  
+Creates a focused package structure with:
+- **src/ layout**: Modern Python package structure
+- **Testing**: pytest setup with coverage
+- **Documentation**: API docs and examples
+- **Development tools**: All linting/formatting configured
+- **setup.py & pyproject.toml**: Ready for distribution
 
 ## Usage
 
-1. Open VS Code in the folder where you want to create your monorepo
-2. Run the command "Create Python Monorepo" from the Command Palette
-3. Enter your desired monorepo name
-4. Choose whether to enable Git and GitHub integration:
+1. Open VS Code in the folder where you want to create your project
+2. Run the command "Create Python Project" from the Command Palette
+3. Enter your desired project name
+4. **Choose project type**: Complete Monorepo or Python Package
+5. Choose whether to enable Git and GitHub integration:
    - **Yes**: Enter GitHub repository info (username/repo-name), Git username, and email
    - **No**: Create project structure only
-5. Choose to open the new monorepo in a new window or add it to your current workspace
+6. Choose to open the new project in a new window or add it to your current workspace
 
 ### Git Integration Features
 

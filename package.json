@@ -1,7 +1,7 @@
 {
     "name": "python-monorepo-generator",
     "displayName": "Python Monorepo Generator",
-    "description": "Generate complete Python monorepo structures with backend, frontend, mobile, apps, packages, docs, and development configurations",
+    "description": "Generate complete Python monorepo structures or single packages with backend, frontend, mobile, apps, packages, docs, and development configurations",
     "version": "0.0.1",
     "publisher": "aegidati",
     "author": {
@@ -20,6 +20,7 @@
     "keywords": [
         "python",
         "monorepo",
+        "package",
         "generator",
         "scaffold",
         "template",
@@ -28,7 +29,9 @@
         "mobile",
         "react-native",
         "fastapi",
-        "project-structure"
+        "project-structure",
+        "pytest",
+        "setuptools"
     ],
     "engines": {
         "vscode": "^1.74.0"
@@ -42,8 +45,8 @@
         "commands": [
             {
                 "command": "pythonMonorepoGenerator.createMonorepo",
-                "title": "Create Python Monorepo",
-                "category": "Monorepo Generator"
+                "title": "Create Python Project",
+                "category": "Python Generator"
             }
         ]
     },
