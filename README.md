@@ -5,8 +5,10 @@ A VS Code extension that generates complete Python monorepo structures with back
 ## Features
 
 - **Interactive Setup**: Prompts for monorepo name with input validation
-- **Complete Structure**: Creates backend, apps, packages, docs, and scripts folders
-- **Ready-to-use Configs**: Includes VS Code settings, tasks, and debug configurations
+- **Git Integration**: Optional Git initialization with GitHub remote setup
+- **GitHub Ready**: Automatically configures Git with user info and remote repository
+- **Complete Structure**: Creates backend, frontend, mobile, apps, packages, docs, and scripts folders
+- **VS Code Integration**: Includes settings, tasks, and debug configurations
 - **Development Tools**: Pre-configured with Black, isort, MyPy, Flake8, and pytest
 - **Workspace File**: Generates a `.code-workspace` file for optimal development experience
 
@@ -15,7 +17,20 @@ A VS Code extension that generates complete Python monorepo structures with back
 1. Open VS Code in the folder where you want to create your monorepo
 2. Run the command "Create Python Monorepo" from the Command Palette
 3. Enter your desired monorepo name
-4. Choose to open the new monorepo in a new window or add it to your current workspace
+4. Choose whether to enable Git and GitHub integration:
+   - **Yes**: Enter GitHub repository info (username/repo-name), Git username, and email
+   - **No**: Create project structure only
+5. Choose to open the new monorepo in a new window or add it to your current workspace
+
+### Git Integration Features
+
+When you enable Git integration, the extension will:
+- Initialize a Git repository in the new monorepo
+- Configure Git with your username and email
+- Create an initial commit with all generated files
+- Add GitHub remote repository (if provided)
+- Set up the main branch
+- Provide instructions for pushing to GitHub
 
 ## Generated Structure
 

@@ -33,6 +33,63 @@ async function createPythonMonorepo() {
             return;
         }
 
+        // Ask if user wants Git integration
+        const gitIntegration = await vscode.window.showQuickPick(
+            ['Yes, initialize Git and GitHub integration', 'No, just create project structure'],
+            {
+                placeHolder: 'Do you want to initialize Git and GitHub integration?'
+            }
+        );
+
+        let githubRepo = '';
+        let gitUserName = '';
+        let gitUserEmail = '';
+
+        if (gitIntegration?.startsWith('Yes')) {
+            // Get GitHub repository info
+            githubRepo = await vscode.window.showInputBox({
+                placeHolder: 'username/repository-name',
+                prompt: 'Enter GitHub repository (username/repo-name) - Optional, press Enter to skip',
+                validateInput: (value: string) => {
+                    if (value && !/^[a-zA-Z0-9][a-zA-Z0-9._-]*\/[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value)) {
+                        return 'Format should be: username/repository-name';
+                    }
+                    return null;
+                }
+            }) || '';
+
+            // Get Git user info
+            gitUserName = await vscode.window.showInputBox({
+                placeHolder: 'Your Name',
+                prompt: 'Enter your Git username',
+                validateInput: (value: string) => {
+                    if (!value || value.trim().length === 0) {
+                        return 'Please enter your Git username';
+                    }
+                    return null;
+                }
+            }) || '';
+
+            if (!gitUserName) {
+                return;
+            }
+
+            gitUserEmail = await vscode.window.showInputBox({
+                placeHolder: 'your.email@example.com',
+                prompt: 'Enter your Git email',
+                validateInput: (value: string) => {
+                    if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                        return 'Please enter a valid email address';
+                    }
+                    return null;
+                }
+            }) || '';
+
+            if (!gitUserEmail) {
+                return;
+            }
+        }
+
         // Get current workspace folder or ask user to select one
         const workspaceFolder = await getWorkspaceFolder();
         if (!workspaceFolder) {
@@ -58,9 +115,22 @@ async function createPythonMonorepo() {
 
         await createMonorepoStructure(monorepoPath, monorepoName);
         
-        // Show success message and offer to open the new monorepo
+        // Initialize Git if requested
+        if (gitIntegration?.startsWith('Yes')) {
+            await initializeGitRepository(monorepoPath, monorepoName, githubRepo, gitUserName, gitUserEmail);
+        }
+        
+        // Show success message with Git info
+        let successMessage = `Python monorepo "${monorepoName}" created successfully!`;
+        if (gitIntegration?.startsWith('Yes')) {
+            successMessage += ' Git repository initialized.';
+            if (githubRepo) {
+                successMessage += ` GitHub remote added: ${githubRepo}`;
+            }
+        }
+
         const choice = await vscode.window.showInformationMessage(
-            `Python monorepo "${monorepoName}" created successfully!`,
+            successMessage,
             'Open in New Window',
             'Add to Workspace'
         );
@@ -169,7 +239,7 @@ async function createDirectory(dirPath: string) {
 async function createFiles(monorepoPath: string, monorepoName: string) {
     // Root files
     await createFile(path.join(monorepoPath, 'README.md'), createReadmeContent(monorepoName));
-    await createFile(path.join(monorepoPath, '.gitignore'), createGitignoreContent());
+    await createFile(path.join(monorepoPath, '.gitignore'), createProjectGitignoreContent());
     await createFile(path.join(monorepoPath, 'pyproject.toml'), createPyprojectContent(monorepoName));
     await createFile(path.join(monorepoPath, 'requirements.txt'), createRequirementsContent());
     await createFile(path.join(monorepoPath, 'requirements-dev.txt'), createDevRequirementsContent());
@@ -298,11 +368,14 @@ Use the provided \`.code-workspace\` file for the best development experience.
 `;
 }
 
-function createGitignoreContent(): string {
+function createProjectGitignoreContent(): string {
     return `# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
+*.so
 
 # Distribution / packaging
 .Python
@@ -324,7 +397,83 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
 .env
 .venv
 env/
@@ -333,28 +482,134 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Spyder project settings
+.spyderproject
+.spyproject
 
-# OS
-.DS_Store
-Thumbs.db
+# Rope project settings
+.ropeproject
 
-# Testing
-.coverage
-.pytest_cache/
-.tox/
-htmlcov/
+# mkdocs documentation
+/site
 
 # mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
-`;
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Node.js (for frontend and mobile)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn/
+.pnp.*
+
+# React Native
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# IDEs
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?`;
 }
 
 function createPyprojectContent(name: string): string {
@@ -1303,6 +1558,68 @@ class ApiService {
 }
 
 export default new ApiService();`;
+}
+
+async function initializeGitRepository(monorepoPath: string, monorepoName: string, githubRepo: string, gitUserName: string, gitUserEmail: string) {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execAsync = util.promisify(exec);
+
+    try {
+        // Change to monorepo directory and initialize git
+        await execAsync('git init', { cwd: monorepoPath });
+        
+        // Configure git user
+        await execAsync(`git config user.name "${gitUserName}"`, { cwd: monorepoPath });
+        await execAsync(`git config user.email "${gitUserEmail}"`, { cwd: monorepoPath });
+        
+        // Add all files
+        await execAsync('git add .', { cwd: monorepoPath });
+        
+        // Create initial commit
+        const commitMessage = `feat: Initial ${monorepoName} monorepo setup
+
+✨ Features:
+- Complete Python monorepo structure
+- Backend with FastAPI setup and testing
+- Frontend with HTML/CSS/JS
+- React Native mobile app
+- VS Code workspace configuration
+- Development tools and scripts
+
+🛠️ Structure:
+- backend/ - Python backend with src and tests
+- frontend/ - Web frontend application  
+- mobile/ - React Native mobile app
+- apps/ - Standalone applications
+- packages/ - Reusable packages
+- docs/ - Documentation
+- scripts/ - Utility scripts`;
+        
+        await execAsync(`git commit -m "${commitMessage}"`, { cwd: monorepoPath });
+        
+        // Add GitHub remote if provided
+        if (githubRepo) {
+            const remoteUrl = `https://github.com/${githubRepo}.git`;
+            await execAsync(`git remote add origin ${remoteUrl}`, { cwd: monorepoPath });
+            
+            // Set up main branch
+            await execAsync('git branch -M main', { cwd: monorepoPath });
+            
+            vscode.window.showInformationMessage(
+                `Git initialized! To push to GitHub: cd ${monorepoName} && git push -u origin main`
+            );
+        } else {
+            vscode.window.showInformationMessage(
+                `Git initialized successfully in ${monorepoName}!`
+            );
+        }
+        
+    } catch (error) {
+        vscode.window.showWarningMessage(
+            `Git initialization failed: ${error}. You can initialize manually with: git init`
+        );
+    }
 }
 
 export function deactivate() {}

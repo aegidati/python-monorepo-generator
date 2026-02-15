@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Git and GitHub integration during monorepo creation
+- Interactive prompts for Git username and email configuration
+- Optional GitHub repository setup with remote origin
+- Automatic initial Git commit with descriptive message
+- Comprehensive .gitignore for Python, Node.js, and React Native projects
+- Instructions for pushing to GitHub after project creation
+
+### Enhanced
+- Improved README generation with Git workflow instructions
+- Enhanced project structure documentation
+- Better error handling for Git operations
+
 ## [0.0.1] - 2026-02-15
 
 ### Added
