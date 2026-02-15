@@ -1,3 +1,7 @@
 export * from './commonTemplates';
 export * from './monorepoTemplates';
-// TODO: Add more template exports as they are created
+export * from './backendTemplates';
+export * from './frontendTemplates';
+export * from './mobileTemplates';
+export * from './scriptsTemplates';
+export * from './vscodeTemplates';
