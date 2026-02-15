@@ -47,6 +47,16 @@
                 "command": "pythonMonorepoGenerator.createMonorepo",
                 "title": "Create Python Project",
                 "category": "Python Generator"
+            },
+            {
+                "command": "pythonMonorepoGenerator.checkPrerequisites",
+                "title": "Check Development Prerequisites",
+                "category": "Python Generator"
+            },
+            {
+                "command": "pythonMonorepoGenerator.installExtensions",
+                "title": "Install Python Development Extensions",
+                "category": "Python Generator"
             }
         ]
     },

@@ -8,7 +8,10 @@ import {
     validateGitUserName, 
     validateGitEmail,
     checkDirectoryExists,
-    removeDirectory
+    removeDirectory,
+    checkPrerequisites,
+    showPrerequisiteDialog,
+    installMissingExtensions
 } from '../utils';
 import { initializeGitRepository } from '../utils/git';
 import { createMonorepoStructure } from '../generators/monorepo';
@@ -16,6 +19,41 @@ import { createMonorepoStructure } from '../generators/monorepo';
 
 export async function createPythonProject(): Promise<void> {
     try {
+        // Check prerequisites first
+        const prerequisiteResult = await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Checking development prerequisites...",
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ message: 'Verifying Python installation...' });
+            return await checkPrerequisites();
+        });
+        
+        // Handle prerequisite results
+        if (!prerequisiteResult.canProceed) {
+            const continueAnyway = await showPrerequisiteDialog(prerequisiteResult);
+            if (!continueAnyway) {
+                return;
+            }
+        } else if (prerequisiteResult.warnings.length > 0) {
+            // Show optional installation dialog for warnings
+            const choice = await vscode.window.showInformationMessage(
+                prerequisiteResult.message,
+                'Continue',
+                'Install Extensions',
+                'View Details'
+            );
+
+            if (choice === 'Install Extensions') {
+                await installMissingExtensions();
+            } else if (choice === 'View Details') {
+                await showPrerequisiteDialog(prerequisiteResult);
+                return;
+            } else if (!choice) {
+                return; // User cancelled
+            }
+        }
+
         // Ask user for project name
         const projectName = await vscode.window.showInputBox({
             placeHolder: 'Enter project name',
