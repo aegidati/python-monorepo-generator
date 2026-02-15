@@ -1,0 +1,63 @@
+{
+    "name": "python-monorepo-generator",
+    "displayName": "Python Monorepo Generator",
+    "description": "Generate complete Python monorepo structures with backend, frontend, mobile, apps, packages, docs, and development configurations",
+    "version": "0.0.1",
+    "publisher": "your-publisher-name",
+    "author": {
+        "name": "Your Name",
+        "email": "your.email@example.com"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yourusername/python-monorepo-generator.git"
+    },
+    "bugs": {
+        "url": "https://github.com/yourusername/python-monorepo-generator/issues"
+    },
+    "homepage": "https://github.com/yourusername/python-monorepo-generator#readme",
+    "keywords": [
+        "python",
+        "monorepo",
+        "generator",
+        "scaffold",
+        "template",
+        "backend",
+        "frontend",
+        "mobile",
+        "react-native",
+        "fastapi",
+        "project-structure"
+    ],
+    "engines": {
+        "vscode": "^1.74.0"
+    },
+    "categories": [
+        "Other", "Snippets", "Extension Packs"
+    ],
+    "activationEvents": [],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "pythonMonorepoGenerator.createMonorepo",
+                "title": "Create Python Monorepo",
+                "category": "Monorepo Generator"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "package": "vsce package",
+        "publish": "vsce publish"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.74.0",
+        "@types/node": "16.x",
+        "typescript": "^4.9.4",
+        "@vscode/vsce": "^2.15.0"
+    }
+}
