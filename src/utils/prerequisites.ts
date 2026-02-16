@@ -285,6 +285,15 @@ function compareVersions(version1: string, version2: string): number {
 }
 
 export async function showPrerequisiteDialog(result: PrerequisiteCheckResult): Promise<boolean> {
+    // If everything is perfect, just show a success message
+    if (result.passed && result.warnings.length === 0 && result.errors.length === 0) {
+        await vscode.window.showInformationMessage(
+            result.message,
+            { modal: false }
+        );
+        return true;
+    }
+
     const items: vscode.MessageItem[] = [];
 
     // Add intelligent action buttons based on what can be auto-fixed
@@ -302,9 +311,10 @@ export async function showPrerequisiteDialog(result: PrerequisiteCheckResult): P
     
     items.push({ title: 'Cancel', isCloseAffordance: true });
 
-    const choice = await vscode.window.showWarningMessage(
+    const messageType = result.canProceed ? vscode.window.showInformationMessage : vscode.window.showWarningMessage;
+    const choice = await messageType(
         result.message,
-        { modal: true, detail: 'Choose an action to resolve the issues above.' },
+        { modal: true, detail: result.canProceed ? 'Some optional components are missing.' : 'Critical prerequisites are missing.' },
         ...items
     );
 

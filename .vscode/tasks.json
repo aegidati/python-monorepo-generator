@@ -13,7 +13,10 @@
 			"problemMatcher": [
 				"$tsc"
 			],
-			"group": "build"
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
 		}
 	]
 }

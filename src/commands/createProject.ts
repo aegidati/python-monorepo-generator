@@ -191,7 +191,13 @@ export async function createPythonProject(): Promise<void> {
         }, async (progress) => {
             try {
                 if (projectOptions.type === 'monorepo') {
-                    await createMonorepoStructure(projectPath, projectName, progress);
+                    await createMonorepoStructure(
+                        projectPath, 
+                        projectName, 
+                        progress,
+                        projectOptions.gitIntegration,
+                        projectOptions.githubRepo
+                    );
                 } else {
                     // await createPackageStructure(projectPath, projectName, progress);
                     // TODO: Implement package structure creation
@@ -203,16 +209,18 @@ export async function createPythonProject(): Promise<void> {
                     await initializeGitRepository(projectPath, githubRepo, gitUserName, gitUserEmail);
                 }
 
-                progress.report({ message: 'Opening project...' });
-                
-                // Open the new project in VS Code
-                const uri = vscode.Uri.file(projectPath);
-                await vscode.commands.executeCommand('vscode.openFolder', uri, true);
-
             } catch (error) {
                 vscode.window.showErrorMessage(`Error creating project: ${error}`);
+                return;
             }
         });
+
+        // Open the new project in VS Code AFTER everything is created
+        vscode.window.showInformationMessage(`Project "${projectName}" created successfully! Opening...`);
+        
+        // Open the folder directly
+        const uri = vscode.Uri.file(projectPath);
+        await vscode.commands.executeCommand('vscode.openFolder', uri, false);
 
     } catch (error) {
         vscode.window.showErrorMessage(`Error: ${error}`);

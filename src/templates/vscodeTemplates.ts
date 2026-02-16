@@ -1,6 +1,8 @@
 export function createVSCodeSettings(): string {
+    const isWindows = process.platform === 'win32';
+    const pythonPath = isWindows ? "./venv/Scripts/python.exe" : "./venv/bin/python";
     return `{
-    "python.defaultInterpreterPath": "./venv/bin/python",
+    "python.defaultInterpreterPath": "${pythonPath}",
     "python.terminal.activateEnvironment": true,
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,
@@ -17,7 +19,20 @@ export function createVSCodeSettings(): string {
         "**/*.pyc": true,
         "**/.pytest_cache": true,
         "**/.mypy_cache": true
-    }
+    },
+    "extensions.ignoreRecommendations": false
+}`;
+}
+
+export function createVSCodeExtensions(): string {
+    return `{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.flake8",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.mypy-type-checker"
+    ]
 }`;
 }
 

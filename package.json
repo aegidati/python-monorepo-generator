@@ -39,7 +39,12 @@
     "categories": [
         "Other", "Snippets", "Extension Packs"
     ],
-    "activationEvents": [],
+    "activationEvents": [
+        "onStartupFinished",
+        "onCommand:pythonMonorepoGenerator.createMonorepo",
+        "onCommand:pythonMonorepoGenerator.checkPrerequisites",
+        "onCommand:pythonMonorepoGenerator.installExtensions"
+    ],
     "main": "./out/extension.js",
     "contributes": {
         "commands": [

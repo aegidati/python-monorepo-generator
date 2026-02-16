@@ -1,7 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { ProgressReporter } from '../types';
 import { createDirectories } from '../utils';
+
+const execAsync = promisify(exec);
 import { 
     createMonorepoReadme,
     createMonorepoPyprojectToml,
@@ -37,13 +41,17 @@ import {
 import {
     createVSCodeSettings,
     createMonorepoTasks,
-    createMonorepoLaunchConfig
+    createMonorepoLaunchConfig,
+    createVSCodeExtensions
 } from '../templates/vscodeTemplates';
+import { createGettingStarted } from '../templates/gettingStartedTemplate';
 
 export async function createMonorepoStructure(
     projectPath: string, 
     name: string, 
-    progress: ProgressReporter
+    progress: ProgressReporter,
+    gitIntegration: boolean = false,
+    githubRepo?: string
 ): Promise<void> {
     const folders = [
         'backend',
@@ -56,12 +64,10 @@ export async function createMonorepoStructure(
         'frontend/web/src',
         'frontend/web/src/components',
         'frontend/web/src/styles',
-        'mobile',
-        'mobile/react-native',
-        'mobile/react-native/src',
-        'mobile/react-native/src/components',
-        'mobile/react-native/src/screens',
-        'apps',
+        'frontend/mobile',
+        'frontend/mobile/src',
+        'frontend/mobile/src/components',
+        'frontend/mobile/src/screens',
         'packages',
         'docs',
         'scripts',
@@ -75,11 +81,11 @@ export async function createMonorepoStructure(
     
     // Create root files
     fs.writeFileSync(path.join(projectPath, 'README.md'), createMonorepoReadme(name));
+    fs.writeFileSync(path.join(projectPath, 'GETTING_STARTED.md'), createGettingStarted(name, gitIntegration, githubRepo));
     fs.writeFileSync(path.join(projectPath, 'pyproject.toml'), createMonorepoPyprojectToml(name));
     fs.writeFileSync(path.join(projectPath, '.gitignore'), createGitignore());
     fs.writeFileSync(path.join(projectPath, 'requirements.txt'), createRootRequirements());
     fs.writeFileSync(path.join(projectPath, 'requirements-dev.txt'), createDevRequirements());
-    fs.writeFileSync(path.join(projectPath, `${name}.code-workspace`), createWorkspaceFile(name));
 
     progress.report({ message: 'Creating backend files...' });
     fs.writeFileSync(path.join(projectPath, 'backend', 'main.py'), createBackendMain());
@@ -100,17 +106,59 @@ export async function createMonorepoStructure(
     fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'styles', 'main.css'), createFrontendStyles());
 
     progress.report({ message: 'Creating mobile files...' });
-    fs.writeFileSync(path.join(projectPath, 'mobile', 'react-native', 'package.json'), createMobilePackageJson(name));
-    fs.writeFileSync(path.join(projectPath, 'mobile', 'react-native', 'App.js'), createMobileApp());
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'mobile', 'package.json'), createMobilePackageJson(name));
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'mobile', 'App.js'), createMobileApp());
 
     // Scripts
     fs.writeFileSync(path.join(projectPath, 'scripts', 'setup.py'), createSetupScript());
     fs.writeFileSync(path.join(projectPath, 'scripts', 'test.py'), createTestScript());
 
+    // Create Python virtual environment BEFORE VS Code settings
+    progress.report({ message: 'Creating Python virtual environment...' });
+    let venvCreated = false;
+    let pythonExecutable = '';
+    
+    try {
+        // Try different Python commands (Windows might use py or python)
+        const pythonCommands = ['python', 'python3', 'py'];
+        
+        for (const pythonCmd of pythonCommands) {
+            try {
+                // Create venv with pip upgrade to ensure it's fully functional
+                await execAsync(`${pythonCmd} -m venv venv`, { cwd: projectPath });
+                
+                // Verify that the venv was actually created by checking for python executable
+                const isWindows = process.platform === 'win32';
+                const venvPythonPath = path.join(projectPath, 'venv', isWindows ? 'Scripts' : 'bin', isWindows ? 'python.exe' : 'python');
+                
+                if (fs.existsSync(venvPythonPath)) {
+                    pythonExecutable = venvPythonPath;
+                    progress.report({ message: `Virtual environment created successfully with ${pythonCmd}!` });
+                    venvCreated = true;
+                    break;
+                }
+            } catch (err) {
+                // Try next command
+                continue;
+            }
+        }
+        
+        if (!venvCreated) {
+            throw new Error('No valid Python command found');
+        }
+    } catch (error) {
+        progress.report({ message: 'Warning: Could not create virtual environment. Please create it manually using: python -m venv venv' });
+        console.error('Virtual environment creation error:', error);
+    }
+
     progress.report({ message: 'Creating VS Code configuration...' });
     fs.writeFileSync(path.join(projectPath, '.vscode', 'tasks.json'), createMonorepoTasks());
     fs.writeFileSync(path.join(projectPath, '.vscode', 'launch.json'), createMonorepoLaunchConfig());
     fs.writeFileSync(path.join(projectPath, '.vscode', 'settings.json'), createVSCodeSettings());
+    fs.writeFileSync(path.join(projectPath, '.vscode', 'extensions.json'), createVSCodeExtensions());
+    
+    // Create marker file to trigger welcome page on first open
+    fs.writeFileSync(path.join(projectPath, '.vscode', '.welcome_pending'), '');
 
     progress.report({ message: 'Monorepo structure created successfully!' });
 }

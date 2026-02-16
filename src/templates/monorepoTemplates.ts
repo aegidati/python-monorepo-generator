@@ -6,10 +6,9 @@ A modern Python monorepo with backend, frontend, mobile, and documentation.
 ## Structure
 
 - \`backend/\` - Python FastAPI backend
-- \`frontend/web/\` - Web frontend
-- \`mobile/react-native/\` - React Native mobile app
-- \`apps/\` - Applications
-- \`packages/\` - Shared packages
+- \`frontend/web/\` - Web application
+- \`frontend/mobile/\` - React Native mobile app
+- \`packages/\` - Shared Python packages
 - \`docs/\` - Documentation
 - \`scripts/\` - Utility scripts
 
@@ -96,6 +95,9 @@ disallow_untyped_defs = true
 }
 
 export function createWorkspaceFile(name: string): string {
+    const isWindows = process.platform === 'win32';
+    const pythonPath = isWindows ? ".\\\\venv\\\\Scripts\\\\python.exe" : "./venv/bin/python";
+    
     return `{
     "folders": [
         {
@@ -120,8 +122,13 @@ export function createWorkspaceFile(name: string): string {
         }
     ],
     "settings": {
-        "python.defaultInterpreterPath": "./venv/bin/python",
-        "python.terminal.activateEnvironment": true
+        "python.defaultInterpreterPath": "${pythonPath}",
+        "python.terminal.activateEnvironment": true,
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.linting.mypyEnabled": true,
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true
     },
     "extensions": {
         "recommendations": [

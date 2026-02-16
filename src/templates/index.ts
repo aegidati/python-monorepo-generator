@@ -5,3 +5,4 @@ export * from './frontendTemplates';
 export * from './mobileTemplates';
 export * from './scriptsTemplates';
 export * from './vscodeTemplates';
+export * from './gettingStartedTemplate';
