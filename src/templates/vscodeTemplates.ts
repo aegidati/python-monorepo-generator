@@ -4,6 +4,10 @@ export function createVSCodeSettings(): string {
     return `{
     "python.defaultInterpreterPath": "${pythonPath}",
     "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.globalModuleInstallation": false,
+    "python.createEnvironment.trigger": "off",
+    "python.analysis.autoImportCompletions": true,
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,
     "python.linting.mypyEnabled": true,

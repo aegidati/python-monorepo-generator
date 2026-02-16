@@ -101,18 +101,18 @@ python main.py
 \`\`\`
 → Backend will be available at http://localhost:8000
 
-**Frontend (React):**
+**Frontend (React + Vite):**
 \`\`\`bash
 cd frontend/web
-npm start
+npm run dev
 # or use VS Code task: Ctrl+Shift+B → "Run Frontend"
 \`\`\`
-→ Frontend will be available at http://localhost:3000
+→ Frontend will be available at http://localhost:5173
 
 **Mobile (React Native):**
 \`\`\`bash
 cd frontend/mobile
-npm start
+npm run start
 \`\`\`
 
 ## 🛠️ Available VS Code Tasks

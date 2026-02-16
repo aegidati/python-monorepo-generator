@@ -58,6 +58,9 @@ async function checkAndOpenWelcome() {
             console.error('Failed to delete welcome marker:', error);
         }
         
+        // Wait a bit for the Python extension to activate and read settings
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         // Open the welcome file
         if (fs.existsSync(welcomePath)) {
             try {

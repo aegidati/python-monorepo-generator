@@ -102,8 +102,67 @@ export async function createMonorepoStructure(
     progress.report({ message: 'Creating frontend files...' });
     fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'index.html'), createFrontendIndex());
     fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'package.json'), createFrontendPackageJson(name));
-    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'app.js'), createFrontendApp());
-    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'styles', 'main.css'), createFrontendStyles());
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'vite.config.js'), `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+})
+`);
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'main.jsx'), `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+`);
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'App.jsx'), createFrontendApp());
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'App.css'), createFrontendStyles());
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'web', 'src', 'index.css'), `:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: light dark;
+  color: rgba(0, 0, 0, 0.87);
+  background-color: #f5f5f5;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+`);
 
     progress.report({ message: 'Creating mobile files...' });
     fs.writeFileSync(path.join(projectPath, 'frontend', 'mobile', 'package.json'), createMobilePackageJson(name));
@@ -124,7 +183,7 @@ export async function createMonorepoStructure(
         
         for (const pythonCmd of pythonCommands) {
             try {
-                // Create venv with pip upgrade to ensure it's fully functional
+                // Create venv
                 await execAsync(`${pythonCmd} -m venv venv`, { cwd: projectPath });
                 
                 // Verify that the venv was actually created by checking for python executable
@@ -135,6 +194,33 @@ export async function createMonorepoStructure(
                     pythonExecutable = venvPythonPath;
                     progress.report({ message: `Virtual environment created successfully with ${pythonCmd}!` });
                     venvCreated = true;
+                    
+                    // Upgrade pip to latest version
+                    progress.report({ message: 'Upgrading pip to latest version...' });
+                    try {
+                        const pipUpgradeCmd = isWindows 
+                            ? `"${venvPythonPath}" -m pip install --upgrade pip`
+                            : `"${venvPythonPath}" -m pip install --upgrade pip`;
+                        await execAsync(pipUpgradeCmd, { cwd: projectPath });
+                        progress.report({ message: 'pip upgraded successfully!' });
+                    } catch (pipError) {
+                        console.error('pip upgrade error:', pipError);
+                        // Non bloccare se l'upgrade di pip fallisce
+                    }
+                    
+                    // Install Python dependencies
+                    progress.report({ message: 'Installing Python dependencies...' });
+                    try {
+                        const pipInstallCmd = isWindows 
+                            ? `"${venvPythonPath}" -m pip install -r requirements.txt`
+                            : `"${venvPythonPath}" -m pip install -r requirements.txt`;
+                        await execAsync(pipInstallCmd, { cwd: projectPath });
+                        progress.report({ message: 'Python dependencies installed successfully!' });
+                    } catch (pipInstallError) {
+                        console.error('pip install error:', pipInstallError);
+                        progress.report({ message: 'Warning: Could not install dependencies. Run: pip install -r requirements.txt' });
+                    }
+                    
                     break;
                 }
             } catch (err) {

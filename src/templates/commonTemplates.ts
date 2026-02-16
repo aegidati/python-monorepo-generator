@@ -81,10 +81,11 @@ logs
 }
 
 export function createRootRequirements(): string {
-    return `# Add your production dependencies here
-# Example:
-# requests>=2.28.0
-# fastapi>=0.68.0
+    return `# Production dependencies
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+python-multipart>=0.0.20
 `;
 }
 
@@ -96,11 +97,11 @@ export function createPackageRequirements(): string {
 }
 
 export function createDevRequirements(): string {
-    return `pytest>=7.0.0
-black>=22.0.0
-isort>=5.10.0
-mypy>=0.950
-flake8>=4.0.0
-pytest-cov>=4.0.0
+    return `pytest>=9.0.0
+black>=26.0.0
+isort>=7.0.0
+mypy>=1.19.0
+flake8>=7.3.0
+pytest-cov>=7.0.0
 `;
 }

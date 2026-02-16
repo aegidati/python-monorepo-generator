@@ -2,9 +2,20 @@ export function createBackendMain(): string {
     return `"""Main application entry point."""
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
 
 app = FastAPI(title="Backend API", version="0.1.0")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(router, prefix="/api/v1")
 
 @app.get("/")
@@ -34,22 +45,26 @@ version = "0.1.0"
 description = "Backend API"
 requires-python = ">=3.8"
 dependencies = [
-    "fastapi>=0.68.0",
-    "uvicorn[standard]>=0.15.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "python-multipart>=0.0.20",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "httpx",
-    "pytest-asyncio",
+    "pytest>=9.0.0",
+    "httpx>=0.28.0",
+    "pytest-asyncio>=0.25.0",
 ]
 `;
 }
 
 export function createBackendRequirements(): string {
-    return `fastapi>=0.68.0
-uvicorn[standard]>=0.15.0
+    return `fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+python-multipart>=0.0.20
 `;
 }
 

@@ -5,22 +5,33 @@ export function createMobilePackageJson(name: string): string {
   "description": "React Native mobile app for ${name}",
   "main": "App.js",
   "scripts": {
-    "start": "npx react-native start",
-    "android": "npx react-native run-android",
-    "ios": "npx react-native run-ios",
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
     "test": "jest"
   },
   "dependencies": {
-    "react": "18.2.0",
-    "react-native": "0.73.4"
+    "react": "18.3.1",
+    "react-native": "0.76.5"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
-    "@babel/runtime": "^7.23.0",
-    "@react-native/babel-preset": "^0.73.0",
-    "@react-native/metro-config": "^0.73.0",
-    "jest": "^29.7.0"
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/runtime": "^7.26.0",
+    "@react-native/babel-preset": "0.76.5",
+    "@react-native/metro-config": "0.76.5",
+    "@react-native/typescript-config": "0.76.5",
+    "@react-native-community/cli": "^15.1.3",
+    "jest": "^29.7.0",
+    "prettier": "^3.4.2"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "rimraf": "^6.0.1",
+    "inflight": "npm:@zkochan/inflight@^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }`;
 }
