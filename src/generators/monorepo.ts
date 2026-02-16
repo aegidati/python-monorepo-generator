@@ -32,7 +32,8 @@ import {
 } from '../templates/frontendTemplates';
 import {
     createMobilePackageJson,
-    createMobileApp
+    createMobileApp,
+    createMetroConfig
 } from '../templates/mobileTemplates';
 import {
     createSetupScript,
@@ -167,6 +168,7 @@ body {
     progress.report({ message: 'Creating mobile files...' });
     fs.writeFileSync(path.join(projectPath, 'frontend', 'mobile', 'package.json'), createMobilePackageJson(name));
     fs.writeFileSync(path.join(projectPath, 'frontend', 'mobile', 'App.js'), createMobileApp());
+    fs.writeFileSync(path.join(projectPath, 'frontend', 'mobile', 'metro.config.js'), createMetroConfig());
 
     // Scripts
     fs.writeFileSync(path.join(projectPath, 'scripts', 'setup.py'), createSetupScript());
