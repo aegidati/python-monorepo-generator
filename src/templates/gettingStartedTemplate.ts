@@ -46,7 +46,25 @@ ${projectName}/
 
 ## 🚀 Quick Start
 
-### 0️⃣ Select Python Interpreter (If Needed)
+### ⚡ Automatic Setup (Recommended)
+
+The fastest way to get started is using the built-in setup command:
+
+1. Press **Ctrl+Shift+P** (Cmd+Shift+P on Mac)
+2. Type **"Python Generator: Setup Project"**
+3. Select the setup steps to execute:
+   - 📦 Install Python Dependencies
+   - 🎨 Install Frontend Dependencies  
+   - 📝 Create Initial Commit (optional)
+4. Wait for completion ✅
+
+This automatically handles all dependency installation for you!
+
+### 🔧 Manual Setup (Alternative)
+
+If you prefer manual setup or need more control:
+
+#### 0️⃣ Select Python Interpreter (If Needed)
 
 If VS Code shows a warning about the Python interpreter:
 
@@ -56,7 +74,7 @@ If VS Code shows a warning about the Python interpreter:
 
 The virtual environment is already created and configured!
 
-### 1️⃣ Activate Virtual Environment
+#### 1️⃣ Activate Virtual Environment
 
 **Windows (PowerShell):**
 \`\`\`powershell
@@ -73,7 +91,9 @@ The virtual environment is already created and configured!
 source venv/bin/activate
 \`\`\`
 
-### 2️⃣ Install Dependencies
+#### 2️⃣ Install Dependencies
+
+> **💡 Tip:** Skip this step if you used the automatic setup command above!
 
 \`\`\`bash
 # Install Python dependencies
@@ -91,7 +111,18 @@ npm install
 cd ../..
 \`\`\`
 
-### 3️⃣ Run Your Applications
+#### 3️⃣ Run Your Applications
+
+**⚡ Quick Start (Recommended):**
+
+Press **Ctrl+Shift+P** (Cmd+Shift+P on Mac) and run **"Python Generator: Start Servers"** to launch:
+- 🔧 Backend Server (FastAPI on http://localhost:8000)
+- 🎨 Frontend Web (React + Vite on http://localhost:5173)
+- 📱 Mobile App (React Native)
+
+Select which servers you want to start, and they'll open in separate terminals!
+
+**🔧 Manual Start (Alternative):**
 
 **Backend (FastAPI):**
 \`\`\`bash

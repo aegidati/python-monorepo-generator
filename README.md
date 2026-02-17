@@ -36,6 +36,8 @@ Creates a focused package structure with:
 
 ## Usage
 
+### Creating a New Project
+
 1. Open VS Code in the folder where you want to create your project
 2. Run the command "Create Python Project" from the Command Palette
 3. Enter your desired project name
@@ -44,6 +46,30 @@ Creates a focused package structure with:
    - **Yes**: Enter GitHub repository info (username/repo-name), Git username, and email
    - **No**: Create project structure only
 6. Choose to open the new project in a new window or add it to your current workspace
+
+### Setting Up an Existing Project
+
+After creating a project, use the **Setup Project** command to automatically install dependencies:
+
+1. Open the generated project in VS Code
+2. Run the command **"Python Generator: Setup Project"** from the Command Palette (Ctrl+Shift+P / Cmd+Shift+P)
+3. Select which setup steps to execute:
+   - 📦 **Install Python Dependencies** - Runs pip install for all requirements
+   - 🎨 **Install Frontend Dependencies** - Runs npm install for web and mobile apps
+   - 📝 **Create Initial Commit** - Creates the first Git commit (optional)
+4. Wait for the automatic installation to complete
+
+This command automates all the manual setup steps described in the generated `GETTING_STARTED.md` file.
+
+## Available Commands
+
+Access all commands via the Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
+
+- **Python Generator: Create Python Project** - Generate a new monorepo or package
+- **Python Generator: Setup Project** - Automatically install dependencies and configure the project
+- **Python Generator: Start Servers** - Start backend, frontend web, and/or mobile servers
+- **Python Generator: Check Development Prerequisites** - Verify Python, Git, and Node.js installation
+- **Python Generator: Install Python Development Extensions** - Install recommended VS Code extensions
 
 ### Git Integration Features
 

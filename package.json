@@ -43,7 +43,9 @@
         "onStartupFinished",
         "onCommand:pythonMonorepoGenerator.createMonorepo",
         "onCommand:pythonMonorepoGenerator.checkPrerequisites",
-        "onCommand:pythonMonorepoGenerator.installExtensions"
+        "onCommand:pythonMonorepoGenerator.installExtensions",
+        "onCommand:pythonMonorepoGenerator.setupProject",
+        "onCommand:pythonMonorepoGenerator.startServers"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -61,6 +63,16 @@
             {
                 "command": "pythonMonorepoGenerator.installExtensions",
                 "title": "Install Python Development Extensions",
+                "category": "Python Generator"
+            },
+            {
+                "command": "pythonMonorepoGenerator.setupProject",
+                "title": "Setup Project (Install Dependencies & Configure)",
+                "category": "Python Generator"
+            },
+            {
+                "command": "pythonMonorepoGenerator.startServers",
+                "title": "Start Servers (Backend, Frontend, Mobile)",
                 "category": "Python Generator"
             }
         ]

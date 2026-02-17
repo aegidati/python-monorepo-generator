@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { createPythonProject } from './commands';
+import { createPythonProject, setupPythonProject, startServers } from './commands';
 import { checkPrerequisites, showPrerequisiteDialog, installMissingExtensions } from './utils';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -36,24 +36,46 @@ export function activate(context: vscode.ExtensionContext) {
         installMissingExtensions
     );
 
-    context.subscriptions.push(createProjectDisposable, checkPrereqDisposable, installExtensionsDisposable);
+    // Command to setup project after creation
+    const setupProjectDisposable = vscode.commands.registerCommand(
+        'pythonMonorepoGenerator.setupProject',
+        setupPythonProject
+    );
+
+    // Command to start servers
+    const startServersDisposable = vscode.commands.registerCommand(
+        'pythonMonorepoGenerator.startServers',
+        startServers
+    );
+
+    context.subscriptions.push(
+        createProjectDisposable, 
+        checkPrereqDisposable, 
+        installExtensionsDisposable,
+        setupProjectDisposable,
+        startServersDisposable
+    );
 }
 
 async function checkAndOpenWelcome() {
-    // Check if there's a .vscode/.welcome_pending file in the workspace
+    // Check if there's a .vscode/.welcome_pending or .setup_pending file in the workspace
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     
     if (!workspaceFolder) {
         return;
     }
     
-    const markerPath = path.join(workspaceFolder.uri.fsPath, '.vscode', '.welcome_pending');
+    const welcomeMarkerPath = path.join(workspaceFolder.uri.fsPath, '.vscode', '.welcome_pending');
+    const setupMarkerPath = path.join(workspaceFolder.uri.fsPath, '.vscode', '.setup_pending');
     const welcomePath = path.join(workspaceFolder.uri.fsPath, 'GETTING_STARTED.md');
     
-    if (fs.existsSync(markerPath)) {
-        // Delete the marker file
+    const hasWelcomeMarker = fs.existsSync(welcomeMarkerPath);
+    const hasSetupMarker = fs.existsSync(setupMarkerPath);
+    
+    if (hasWelcomeMarker) {
+        // Delete the welcome marker file
         try {
-            fs.unlinkSync(markerPath);
+            fs.unlinkSync(welcomeMarkerPath);
         } catch (error) {
             console.error('Failed to delete welcome marker:', error);
         }
@@ -69,6 +91,32 @@ async function checkAndOpenWelcome() {
             } catch (error) {
                 console.error('Failed to open welcome file:', error);
             }
+        }
+    }
+    
+    // Check if setup is pending
+    if (hasSetupMarker) {
+        // Delete the setup marker file
+        try {
+            fs.unlinkSync(setupMarkerPath);
+        } catch (error) {
+            console.error('Failed to delete setup marker:', error);
+        }
+        
+        // Wait a bit more if welcome was just opened
+        if (hasWelcomeMarker) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        
+        // Ask user if they want to setup the project now
+        const choice = await vscode.window.showInformationMessage(
+            '🚀 Ready to setup your project? Install dependencies and configure everything automatically.',
+            'Setup Now',
+            'Later'
+        );
+        
+        if (choice === 'Setup Now') {
+            vscode.commands.executeCommand('pythonMonorepoGenerator.setupProject').then(() => {}, () => {});
         }
     }
 }

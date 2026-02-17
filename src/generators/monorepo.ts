@@ -197,7 +197,7 @@ body {
                     progress.report({ message: `Virtual environment created successfully with ${pythonCmd}!` });
                     venvCreated = true;
                     
-                    // Upgrade pip to latest version
+                    // Upgrade pip to latest version (basic setup)
                     progress.report({ message: 'Upgrading pip to latest version...' });
                     try {
                         const pipUpgradeCmd = isWindows 
@@ -210,18 +210,8 @@ body {
                         // Non bloccare se l'upgrade di pip fallisce
                     }
                     
-                    // Install Python dependencies
-                    progress.report({ message: 'Installing Python dependencies...' });
-                    try {
-                        const pipInstallCmd = isWindows 
-                            ? `"${venvPythonPath}" -m pip install -r requirements.txt`
-                            : `"${venvPythonPath}" -m pip install -r requirements.txt`;
-                        await execAsync(pipInstallCmd, { cwd: projectPath });
-                        progress.report({ message: 'Python dependencies installed successfully!' });
-                    } catch (pipInstallError) {
-                        console.error('pip install error:', pipInstallError);
-                        progress.report({ message: 'Warning: Could not install dependencies. Run: pip install -r requirements.txt' });
-                    }
+                    // Note: Dependencies installation moved to "Setup Project" command
+                    // Users should run "Python Generator: Setup Project" after creation
                     
                     break;
                 }
@@ -245,8 +235,9 @@ body {
     fs.writeFileSync(path.join(projectPath, '.vscode', 'settings.json'), createVSCodeSettings());
     fs.writeFileSync(path.join(projectPath, '.vscode', 'extensions.json'), createVSCodeExtensions());
     
-    // Create marker file to trigger welcome page on first open
+    // Create marker files to trigger actions on first open
     fs.writeFileSync(path.join(projectPath, '.vscode', '.welcome_pending'), '');
+    fs.writeFileSync(path.join(projectPath, '.vscode', '.setup_pending'), '');
 
     progress.report({ message: 'Monorepo structure created successfully!' });
 }

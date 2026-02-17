@@ -26,9 +26,12 @@ export function createMobilePackageJson(name: string): string {
     "prettier": "^3.4.2"
   },
   "overrides": {
-    "glob": "^11.0.0",
+    "glob": "^11.0.2",
     "rimraf": "^6.0.1",
-    "inflight": "npm:@zkochan/inflight@^1.0.0"
+    "inflight": "npm:@zkochan/inflight@^1.0.0",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "npm:@babel/plugin-transform-nullish-coalescing-operator@^7.26.0",
+    "@babel/plugin-proposal-class-properties": "npm:@babel/plugin-transform-class-properties@^7.26.0",
+    "@babel/plugin-proposal-optional-chaining": "npm:@babel/plugin-transform-optional-chaining@^7.26.0"
   },
   "engines": {
     "node": ">=18"
