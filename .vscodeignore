@@ -1,0 +1,37 @@
+# Source files
+src/**
+tsconfig.json
+
+# Development files
+.vscode/**
+.vscode-test/**
+.gitignore
+.gitattributes
+
+# Documentation files (keep only essential ones)
+CONTRIBUTING.md
+DEVELOPMENT_HISTORY.md
+EMAIL_INSTRUCTIONS.md
+EMAIL_OUTLOOK_HTML.html
+EMAIL_OUTLOOK_PLAIN.txt
+ADVANCED_FEATURES.md
+
+# GitHub files
+.github/**
+
+# Build files
+**/*.map
+*.vsix
+
+# Dependencies
+node_modules/**
+
+# Test files
+test/**
+**/*.test.ts
+**/*.test.js
+
+# Other
+.eslintrc.json
+.prettierrc
+*.log
