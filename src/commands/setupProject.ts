@@ -38,6 +38,7 @@ export async function setupPythonProject() {
     }
 
     // Execute setup steps
+    let setupCompleted = false;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: "Setting up project...",
@@ -78,7 +79,42 @@ export async function setupPythonProject() {
             }
 
             progress.report({ increment: 100 });
+            setupCompleted = true;
 
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Setup failed: ${errorMessage}`);
+        }
+    });
+
+    // After setup is complete, check if we should push to GitHub
+    if (setupCompleted) {
+        const hasGitHubRemote = await checkGitHubRemote(projectRoot);
+        
+        if (hasGitHubRemote && options.initialCommit) {
+            // Ask if user wants to push to GitHub
+            const pushChoice = await vscode.window.showInformationMessage(
+                '✅ Project setup completed! Push to GitHub now?',
+                'Push to GitHub',
+                'View README',
+                'Later'
+            );
+            
+            if (pushChoice === 'Push to GitHub') {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Pushing to GitHub...",
+                    cancellable: false
+                }, async () => {
+                    await pushToGitHub(projectRoot);
+                });
+            } else if (pushChoice === 'View README') {
+                const readmePath = path.join(projectRoot, 'README.md');
+                vscode.workspace.openTextDocument(readmePath).then(doc => {
+                    vscode.window.showTextDocument(doc).then(() => {}, () => {});
+                }, () => {});
+            }
+        } else {
             vscode.window.showInformationMessage(
                 '✅ Project setup completed successfully!',
                 'View README'
@@ -90,12 +126,8 @@ export async function setupPythonProject() {
                     }, () => {});
                 }
             }, () => {});
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            vscode.window.showErrorMessage(`Setup failed: ${errorMessage}`);
         }
-    });
+    }
 }
 
 function isGeneratedProject(projectRoot: string): boolean {
@@ -136,11 +168,29 @@ async function promptSetupOptions(projectRoot: string): Promise<SetupOptions | u
     }
 
     if (hasGit) {
-        items.push({
-            label: '$(git-commit) Create Initial Commit',
-            description: 'git commit -m "Initial setup"',
-            picked: false
-        });
+        // Check if there are staged files (from initial git add)
+        try {
+            const staged = require('child_process').execSync('git diff --cached --name-only', {
+                cwd: projectRoot,
+                encoding: 'utf-8'
+            }).trim();
+            
+            const hasStagedFiles = staged.length > 0;
+            
+            items.push({
+                label: '$(git-commit) Create Initial Commit',
+                description: hasStagedFiles 
+                    ? 'Commit project structure and installed dependencies'
+                    : 'git commit all changes',
+                picked: hasStagedFiles // Auto-select if files are staged from project creation
+            });
+        } catch {
+            items.push({
+                label: '$(git-commit) Create Initial Commit',
+                description: 'git commit all changes',
+                picked: false
+            });
+        }
     }
 
     if (items.length === 0) {
@@ -227,10 +277,18 @@ async function installFrontendDependencies(projectRoot: string): Promise<void> {
 
 async function createInitialCommit(projectRoot: string): Promise<void> {
     try {
+        // Set environment to prevent Git from opening an editor
+        const gitEnv = {
+            ...process.env,
+            GIT_EDITOR: 'true',
+            GIT_TERMINAL_PROMPT: '0'
+        };
+
         // Check if there are uncommitted changes
         const status = execSync('git status --porcelain', { 
             cwd: projectRoot, 
-            encoding: 'utf-8' 
+            encoding: 'utf-8',
+            env: gitEnv
         });
 
         if (status.trim().length === 0) {
@@ -238,13 +296,15 @@ async function createInitialCommit(projectRoot: string): Promise<void> {
             return;
         }
 
-        // Stage all files
-        execSync('git add .', { cwd: projectRoot });
+        // Stage all files (including any new files like package-lock.json)
+        execSync('git add .', { cwd: projectRoot, env: gitEnv });
 
-        // Create initial commit
-        execSync('git commit -m "Initial project setup"', { 
+        // Create initial commit with comprehensive message
+        const commitMessage = 'Initial commit';
+        execSync(`git commit -m "${commitMessage}" --no-edit`, { 
             cwd: projectRoot,
-            encoding: 'utf-8'
+            encoding: 'utf-8',
+            env: gitEnv
         });
 
         vscode.window.showInformationMessage('✅ Initial commit created successfully!');
@@ -252,5 +312,86 @@ async function createInitialCommit(projectRoot: string): Promise<void> {
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         throw new Error(`Git commit failed: ${errorMessage}`);
+    }
+}
+
+async function checkGitHubRemote(projectRoot: string): Promise<boolean> {
+    try {
+        const remotes = execSync('git remote -v', {
+            cwd: projectRoot,
+            encoding: 'utf-8'
+        });
+        
+        // Check if there's an origin remote pointing to GitHub
+        return remotes.includes('origin') && remotes.includes('github.com');
+    } catch {
+        return false;
+    }
+}
+
+async function pushToGitHub(projectRoot: string): Promise<void> {
+    try {
+        const gitEnv = {
+            ...process.env,
+            GIT_EDITOR: 'true',
+            GIT_TERMINAL_PROMPT: '0'
+        };
+
+        // Get current branch name
+        const branch = execSync('git branch --show-current', {
+            cwd: projectRoot,
+            encoding: 'utf-8'
+        }).trim();
+
+        // Check if branch is master, rename to main if needed
+        if (branch === 'master') {
+            execSync('git branch -M main', { cwd: projectRoot, env: gitEnv });
+        }
+
+        const finalBranch = branch === 'master' ? 'main' : branch;
+
+        // Push to GitHub
+        try {
+            execSync(`git push -u origin ${finalBranch}`, { 
+                cwd: projectRoot, 
+                env: gitEnv,
+                encoding: 'utf-8'
+            });
+            
+            vscode.window.showInformationMessage(
+                `✅ Successfully pushed to GitHub (${finalBranch} branch)!`,
+                'Open on GitHub'
+            ).then(selection => {
+                if (selection === 'Open on GitHub') {
+                    // Get remote URL
+                    const remoteUrl = execSync('git remote get-url origin', {
+                        cwd: projectRoot,
+                        encoding: 'utf-8'
+                    }).trim();
+                    
+                    // Convert git URL to https URL
+                    const httpsUrl = remoteUrl
+                        .replace('git@github.com:', 'https://github.com/')
+                        .replace('.git', '');
+                    
+                    vscode.env.openExternal(vscode.Uri.parse(httpsUrl)).then(() => {}, () => {});
+                }
+            }, () => {});
+
+        } catch (pushError: any) {
+            // If push fails, provide helpful guidance
+            if (pushError.message.includes('remote contains work')) {
+                throw new Error('Remote repository contains work that you do not have locally. Pull first with: git pull origin main --rebase');
+            } else if (pushError.message.includes('Repository not found')) {
+                throw new Error('GitHub repository not found. Make sure you created it on GitHub first at: https://github.com/new');
+            } else {
+                throw pushError;
+            }
+        }
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Push to GitHub failed: ${errorMessage}`);
+        throw error;
     }
 }
