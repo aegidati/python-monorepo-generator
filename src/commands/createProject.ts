@@ -216,11 +216,6 @@ export async function createPythonProject(): Promise<void> {
         });
 
         // Open the new project in VS Code AFTER everything is created
-        vscode.window.showInformationMessage(
-            `Project "${projectName}" created successfully! Next: Run "Setup Project" to install dependencies.`
-        );
-        
-        // Open the folder directly
         const uri = vscode.Uri.file(projectPath);
         await vscode.commands.executeCommand('vscode.openFolder', uri, false);
 

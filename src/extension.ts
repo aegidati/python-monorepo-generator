@@ -80,6 +80,9 @@ async function checkAndOpenWelcome() {
             console.error('Failed to delete welcome marker:', error);
         }
         
+        // Show a message that the project is being prepared
+        const preparing = vscode.window.setStatusBarMessage('$(sync~spin) Preparing workspace...');
+        
         // Wait a bit for the Python extension to activate and read settings
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -88,9 +91,13 @@ async function checkAndOpenWelcome() {
             try {
                 const doc = await vscode.workspace.openTextDocument(welcomePath);
                 await vscode.window.showTextDocument(doc, { preview: false });
+                preparing.dispose();
             } catch (error) {
                 console.error('Failed to open welcome file:', error);
+                preparing.dispose();
             }
+        } else {
+            preparing.dispose();
         }
     }
     
@@ -110,7 +117,7 @@ async function checkAndOpenWelcome() {
         
         // Ask user if they want to setup the project now
         const choice = await vscode.window.showInformationMessage(
-            '🚀 Ready to setup your project? Install dependencies and configure everything automatically.',
+            '✅ Project created successfully! 🚀 Ready to setup? Install dependencies and create initial commit automatically.',
             'Setup Now',
             'Later'
         );

@@ -1,12 +1,62 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 
 interface SetupOptions {
     installPythonDeps: boolean;
     installFrontendDeps: boolean;
     initialCommit: boolean;
+}
+
+/**
+ * Execute a command and wait for it to complete
+ * @param command The command to execute
+ * @param args Command arguments
+ * @param cwd Working directory
+ * @param outputChannel Optional output channel to show command output
+ * @returns Promise that resolves when command completes
+ */
+function executeCommand(
+    command: string, 
+    args: string[], 
+    cwd: string,
+    outputChannel?: vscode.OutputChannel
+): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const isWindows = process.platform === 'win32';
+        const shell = isWindows ? 'powershell.exe' : '/bin/bash';
+        
+        const proc = spawn(command, args, {
+            cwd,
+            shell: shell,
+            env: process.env
+        });
+
+        proc.stdout?.on('data', (data) => {
+            if (outputChannel) {
+                outputChannel.append(data.toString());
+            }
+        });
+
+        proc.stderr?.on('data', (data) => {
+            if (outputChannel) {
+                outputChannel.append(data.toString());
+            }
+        });
+
+        proc.on('error', (error) => {
+            reject(error);
+        });
+
+        proc.on('close', (code) => {
+            if (code === 0) {
+                resolve();
+            } else {
+                reject(new Error(`Command exited with code ${code}`));
+            }
+        });
+    });
 }
 
 export async function setupPythonProject() {
@@ -217,12 +267,8 @@ async function promptSetupOptions(projectRoot: string): Promise<SetupOptions | u
 }
 
 async function installPythonDependencies(projectRoot: string): Promise<void> {
-    const terminal = vscode.window.createTerminal({
-        name: 'Setup: Python Dependencies',
-        cwd: projectRoot
-    });
-
-    terminal.show();
+    const outputChannel = vscode.window.createOutputChannel('Python Dependencies Setup');
+    outputChannel.show();
 
     // Determine the correct activation command based on OS
     const isWindows = process.platform === 'win32';
@@ -232,20 +278,34 @@ async function installPythonDependencies(projectRoot: string): Promise<void> {
         throw new Error('Virtual environment not found. Please run the project creation first.');
     }
 
-    const activateCmd = isWindows 
-        ? `.\\venv\\Scripts\\Activate.ps1` 
-        : `source venv/bin/activate`;
+    const pipPath = isWindows 
+        ? path.join(venvPath, 'Scripts', 'pip.exe')
+        : path.join(venvPath, 'bin', 'pip');
 
-    // Install requirements
-    terminal.sendText(`${activateCmd} ; pip install -r requirements.txt`, true);
+    outputChannel.appendLine('📦 Installing Python dependencies...\n');
+
+    // Install requirements.txt
+    try {
+        await executeCommand(pipPath, ['install', '-r', 'requirements.txt'], projectRoot, outputChannel);
+        outputChannel.appendLine('\n✅ requirements.txt installed successfully');
+    } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to install requirements.txt: ${errorMsg}`);
+    }
     
-    // Check if requirements-dev.txt exists
+    // Install requirements-dev.txt if exists
     if (fs.existsSync(path.join(projectRoot, 'requirements-dev.txt'))) {
-        terminal.sendText(`pip install -r requirements-dev.txt`, true);
+        try {
+            outputChannel.appendLine('\n📦 Installing development dependencies...\n');
+            await executeCommand(pipPath, ['install', '-r', 'requirements-dev.txt'], projectRoot, outputChannel);
+            outputChannel.appendLine('\n✅ requirements-dev.txt installed successfully');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to install requirements-dev.txt: ${errorMsg}`);
+        }
     }
 
-    // Wait a bit for commands to complete
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    outputChannel.appendLine('\n✅ All Python dependencies installed successfully!');
 }
 
 async function installFrontendDependencies(projectRoot: string): Promise<void> {
@@ -254,24 +314,32 @@ async function installFrontendDependencies(projectRoot: string): Promise<void> {
 
     // Install web dependencies
     if (fs.existsSync(webPackagePath)) {
-        const webTerminal = vscode.window.createTerminal({
-            name: 'Setup: Web Dependencies',
-            cwd: path.join(projectRoot, 'frontend', 'web')
-        });
-        webTerminal.show();
-        webTerminal.sendText('npm install', true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const outputChannel = vscode.window.createOutputChannel('Web Dependencies Setup');
+        outputChannel.show();
+        outputChannel.appendLine('📦 Installing web dependencies...\n');
+        
+        try {
+            await executeCommand('npm', ['install'], path.join(projectRoot, 'frontend', 'web'), outputChannel);
+            outputChannel.appendLine('\n✅ Web dependencies installed successfully!');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to install web dependencies: ${errorMsg}`);
+        }
     }
 
     // Install mobile dependencies
     if (fs.existsSync(mobilePackagePath)) {
-        const mobileTerminal = vscode.window.createTerminal({
-            name: 'Setup: Mobile Dependencies',
-            cwd: path.join(projectRoot, 'frontend', 'mobile')
-        });
-        mobileTerminal.show();
-        mobileTerminal.sendText('npm install', true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const outputChannel = vscode.window.createOutputChannel('Mobile Dependencies Setup');
+        outputChannel.show();
+        outputChannel.appendLine('📦 Installing mobile dependencies...\n');
+        
+        try {
+            await executeCommand('npm', ['install'], path.join(projectRoot, 'frontend', 'mobile'), outputChannel);
+            outputChannel.appendLine('\n✅ Mobile dependencies installed successfully!');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to install mobile dependencies: ${errorMsg}`);
+        }
     }
 }
 
@@ -336,6 +404,78 @@ async function pushToGitHub(projectRoot: string): Promise<void> {
             GIT_EDITOR: 'true',
             GIT_TERMINAL_PROMPT: '0'
         };
+
+        // Get remote URL to check repository configuration
+        let remoteUrl: string;
+        try {
+            remoteUrl = execSync('git remote get-url origin', {
+                cwd: projectRoot,
+                encoding: 'utf-8'
+            }).trim();
+        } catch {
+            throw new Error('No remote "origin" found. Please add a GitHub remote first:\ngit remote add origin <your-repo-url>');
+        }
+
+        // Verify the repository exists on GitHub before pushing
+        try {
+            execSync('git ls-remote origin', { 
+                cwd: projectRoot, 
+                env: gitEnv,
+                encoding: 'utf-8',
+                stdio: 'pipe'
+            });
+        } catch (error) {
+            // Repository doesn't exist on GitHub
+            const repoName = path.basename(projectRoot);
+            const choice = await vscode.window.showWarningMessage(
+                `⚠️ The GitHub repository doesn't exist yet.\n\nYou need to create it on GitHub first.`,
+                'Create on GitHub',
+                'Show Instructions',
+                'Cancel'
+            );
+
+            if (choice === 'Create on GitHub') {
+                // Open GitHub new repository page
+                await vscode.env.openExternal(vscode.Uri.parse('https://github.com/new'));
+                
+                // Wait for user to create the repository
+                const retry = await vscode.window.showInformationMessage(
+                    `📝 After creating the repository on GitHub:\n1. Use the name: ${repoName}\n2. Don't initialize with README (already exists)\n3. Click "Push Now" when ready`,
+                    'Push Now',
+                    'Cancel'
+                );
+                
+                if (retry !== 'Push Now') {
+                    throw new Error('Push cancelled by user');
+                }
+
+                // Verify the repository now exists
+                try {
+                    execSync('git ls-remote origin', { 
+                        cwd: projectRoot, 
+                        env: gitEnv,
+                        encoding: 'utf-8',
+                        stdio: 'pipe'
+                    });
+                } catch {
+                    throw new Error('Repository still not found. Make sure you created it on GitHub and try again.');
+                }
+            } else if (choice === 'Show Instructions') {
+                const instructions = `To push your project to GitHub:
+
+1. Go to https://github.com/new
+2. Create a repository named: ${repoName}
+3. Don't initialize with README, .gitignore, or license
+4. Copy the repository URL
+5. Run: git remote set-url origin <your-repo-url>
+6. Try pushing again`;
+                
+                vscode.window.showInformationMessage(instructions, { modal: true });
+                throw new Error('Push cancelled - follow the instructions shown');
+            } else {
+                throw new Error('Push cancelled by user');
+            }
+        }
 
         // Get current branch name
         const branch = execSync('git branch --show-current', {
