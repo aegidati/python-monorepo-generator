@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ProgressReporter } from '../types';
+import { ProgressReporter, PackageType } from '../types';
 import { createDirectories } from '../utils';
 import {
     createPackageReadme,
@@ -12,7 +12,15 @@ import {
     createPackageManifest,
     createPackageSetupCfg,
     createStandalonePackagePyprojectToml,
-    createStandalonePackageReadme
+    createStandalonePackageReadme,
+    createUIPackageJson,
+    createUITsConfig,
+    createUIIndexFile,
+    createUIProviderComponent,
+    createUIButtonComponent,
+    createUIFormComponent,
+    createUITypesFile,
+    createUIPackageReadme
 } from '../templates/packageTemplates';
 import { createGitignore } from '../templates/commonTemplates';
 import {
@@ -29,6 +37,7 @@ export async function createMonorepoPackage(
     monorepoPath: string,
     packageName: string,
     progress: ProgressReporter,
+    type: PackageType = 'backend',
     description?: string
 ): Promise<void> {
     const packagePath = path.join(monorepoPath, 'packages', packageName);
@@ -39,9 +48,76 @@ export async function createMonorepoPackage(
         throw new Error(`Package "${packageName}" already exists in packages/`);
     }
 
-    progress.report({ message: `Creating package: ${packageName}...` });
+    progress.report({ message: `Creating ${type} package: ${packageName}...` });
 
-    // Create package directory structure
+    if (type === 'ui') {
+        // Create UI package structure
+        const folders = [
+            '',
+            'src',
+            'src/components'
+        ];
+        createDirectories(packagePath, folders);
+
+        progress.report({ message: 'Creating UI package files...' });
+
+        // Create UI package files
+        fs.writeFileSync(
+            path.join(packagePath, 'package.json'),
+            createUIPackageJson(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, 'tsconfig.json'),
+            createUITsConfig()
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, 'README.md'),
+            createUIPackageReadme(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, 'src', 'index.tsx'),
+            createUIIndexFile(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, 'src', 'types.ts'),
+            createUITypesFile(packageName)
+        );
+
+        // Create component files
+        fs.writeFileSync(
+            path.join(packagePath, 'src', 'components', 'Provider.tsx'),
+            createUIProviderComponent(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, 'src', 'components', 'Button.tsx'),
+            createUIButtonComponent(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, 'src', 'components', 'Form.tsx'),
+            createUIFormComponent(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(packagePath, '.gitignore'),
+            `node_modules/
+dist/
+*.log
+.DS_Store
+.env
+`
+        );
+
+        progress.report({ message: `UI package ${packageName} created successfully!` });
+        return;
+    }
+
+    // Create backend package directory structure
     const folders = [
         '',
         'src',
@@ -51,7 +127,7 @@ export async function createMonorepoPackage(
 
     createDirectories(packagePath, folders);
 
-    progress.report({ message: 'Creating package files...' });
+    progress.report({ message: 'Creating backend package files...' });
 
     // Create package files
     fs.writeFileSync(
@@ -111,13 +187,176 @@ export async function createStandalonePackage(
     projectPath: string,
     packageName: string,
     progress: ProgressReporter,
+    type: PackageType = 'backend',
     description?: string
 ): Promise<void> {
     const pythonPackageName = packageName.replace(/-/g, '_');
 
-    progress.report({ message: `Creating standalone package: ${packageName}...` });
+    progress.report({ message: `Creating standalone ${type} package: ${packageName}...` });
 
-    // Create package directory structure
+    if (type === 'ui') {
+        // Create UI package structure
+        const folders = [
+            'src',
+            'src/components',
+            'docs',
+            '.vscode'
+        ];
+
+        createDirectories(projectPath, folders);
+
+        progress.report({ message: 'Creating UI package files...' });
+
+        // Root files
+        fs.writeFileSync(
+            path.join(projectPath, 'package.json'),
+            createUIPackageJson(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, 'tsconfig.json'),
+            createUITsConfig()
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, 'README.md'),
+            createUIPackageReadme(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, '.gitignore'),
+            `node_modules/
+dist/
+*.log
+.DS_Store
+.env
+*.tsbuildinfo
+coverage/
+.vscode/settings.json
+`
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, 'LICENSE'),
+            `MIT License
+
+Copyright (c) ${new Date().getFullYear()} [Your Name]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`
+        );
+
+        // Source files
+        fs.writeFileSync(
+            path.join(projectPath, 'src', 'index.tsx'),
+            createUIIndexFile(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, 'src', 'types.ts'),
+            createUITypesFile(packageName)
+        );
+
+        // Create component files
+        fs.writeFileSync(
+            path.join(projectPath, 'src', 'components', 'Provider.tsx'),
+            createUIProviderComponent(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, 'src', 'components', 'Button.tsx'),
+            createUIButtonComponent(packageName)
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, 'src', 'components', 'Form.tsx'),
+            createUIFormComponent(packageName)
+        );
+
+        // Documentation
+        fs.writeFileSync(
+            path.join(projectPath, 'docs', 'index.md'),
+            `# ${packageName} Documentation
+
+Welcome to the ${packageName} documentation.
+
+## Overview
+
+UI components package built with React and TypeScript.
+
+## Installation
+
+\`\`\`bash
+npm install ${packageName}
+\`\`\`
+
+## Quick Start
+
+See [README.md](../README.md) for usage examples.
+
+## Components
+
+- Provider
+- Button
+- Form
+
+## API Reference
+
+[Add detailed API documentation here]
+`
+        );
+
+        // VS Code configuration
+        fs.writeFileSync(
+            path.join(projectPath, '.vscode', 'settings.json'),
+            `{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}`
+        );
+
+        fs.writeFileSync(
+            path.join(projectPath, '.vscode', 'extensions.json'),
+            `{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next"
+  ]
+}`
+        );
+
+        progress.report({ message: 'UI package structure created successfully!' });
+        return;
+    }
+
+    // Create backend package directory structure
     const folders = [
         'src',
         `src/${pythonPackageName}`,

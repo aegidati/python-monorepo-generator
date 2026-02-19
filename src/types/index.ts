@@ -16,4 +16,12 @@ export interface ProjectTypeChoice {
     detail: string;
 }
 
+export type PackageType = 'backend' | 'ui';
+
+export interface PackageOptions {
+    name: string;
+    type: PackageType;
+    description?: string;
+}
+
 export type ProgressReporter = vscode.Progress<{increment?: number, message?: string}>;

@@ -96,7 +96,9 @@ disallow_untyped_defs = true
 
 export function createWorkspaceFile(name: string): string {
     const isWindows = process.platform === 'win32';
-    const pythonPath = isWindows ? ".\\\\venv\\\\Scripts\\\\python.exe" : "./venv/bin/python";
+    const pythonPath = isWindows 
+        ? "${workspaceFolder}/venv/Scripts/python.exe" 
+        : "${workspaceFolder}/venv/bin/python";
     
     return `{
     "folders": [

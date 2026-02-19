@@ -553,3 +553,479 @@ See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 Created and maintained by [Your Name](https://github.com/yourusername).
 `;
 }
+
+// ============================================
+// UI PACKAGE TEMPLATES
+// ============================================
+
+export function createUIPackageJson(packageName: string): string {
+    return `{
+  "name": "${packageName}",
+  "version": "0.1.0",
+  "description": "UI components package for ${packageName}",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup src/index.tsx --format cjs,esm --dts",
+    "dev": "tsup src/index.tsx --format cjs,esm --dts --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write \\"src/**/*.{ts,tsx}\\"",
+    "type-check": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.4.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "react",
+    "components",
+    "ui",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/${packageName}.git"
+  },
+  "license": "MIT"
+}`;
+}
+
+export function createUITsConfig(): string {
+    return `{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}`;
+}
+
+export function createUIIndexFile(packageName: string): string {
+    const componentName = packageName
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    
+    return `/**
+ * ${packageName} - UI Components Package
+ * 
+ * Export all components from this file
+ */
+
+export { default as ${componentName}Provider } from './components/Provider';
+export { default as ${componentName}Button } from './components/Button';
+export { default as ${componentName}Form } from './components/Form';
+
+// Export types
+export type { ${componentName}Props } from './types';
+`;
+}
+
+export function createUIProviderComponent(packageName: string): string {
+    const componentName = packageName
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    
+    return `import React, { createContext, useContext, ReactNode } from 'react';
+
+interface ${componentName}ContextType {
+  // Add your context properties here
+  isAuthenticated?: boolean;
+  user?: any;
+}
+
+const ${componentName}Context = createContext<${componentName}ContextType | undefined>(undefined);
+
+export interface ${componentName}ProviderProps {
+  children: ReactNode;
+  // Add your provider props here
+}
+
+/**
+ * ${componentName}Provider - Context provider for ${packageName}
+ */
+const ${componentName}Provider: React.FC<${componentName}ProviderProps> = ({ children }) => {
+  // Add your provider logic here
+  const value: ${componentName}ContextType = {
+    isAuthenticated: false,
+    user: null,
+  };
+
+  return (
+    <${componentName}Context.Provider value={value}>
+      {children}
+    </${componentName}Context.Provider>
+  );
+};
+
+/**
+ * Hook to use ${componentName} context
+ */
+export const use${componentName} = () => {
+  const context = useContext(${componentName}Context);
+  if (context === undefined) {
+    throw new Error('use${componentName} must be used within a ${componentName}Provider');
+  }
+  return context;
+};
+
+export default ${componentName}Provider;
+`;
+}
+
+export function createUIButtonComponent(packageName: string): string {
+    const componentName = packageName
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    
+    return `import React from 'react';
+
+export interface ${componentName}ButtonProps {
+  /**
+   * Button text
+   */
+  children: React.ReactNode;
+  /**
+   * Button variant
+   */
+  variant?: 'primary' | 'secondary' | 'danger';
+  /**
+   * Button size
+   */
+  size?: 'small' | 'medium' | 'large';
+  /**
+   * Disabled state
+   */
+  disabled?: boolean;
+  /**
+   * Click handler
+   */
+  onClick?: () => void;
+  /**
+   * Additional CSS class
+   */
+  className?: string;
+}
+
+/**
+ * ${componentName}Button - Reusable button component
+ */
+const ${componentName}Button: React.FC<${componentName}ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'medium',
+  disabled = false,
+  onClick,
+  className = '',
+}) => {
+  const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+  
+  const variantStyles = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+  };
+  
+  const sizeStyles = {
+    small: 'px-3 py-1.5 text-sm',
+    medium: 'px-4 py-2 text-base',
+    large: 'px-6 py-3 text-lg',
+  };
+
+  const disabledStyles = 'opacity-50 cursor-not-allowed';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={\`\${baseStyles} \${variantStyles[variant]} \${sizeStyles[size]} \${disabled ? disabledStyles : ''} \${className}\`}
+    >
+      {children}
+    </button>
+  );
+};
+
+export default ${componentName}Button;
+`;
+}
+
+export function createUIFormComponent(packageName: string): string {
+    const componentName = packageName
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    
+    return `import React, { FormEvent, useState } from 'react';
+import ${componentName}Button from './Button';
+
+export interface ${componentName}FormProps {
+  /**
+   * Form submit handler
+   */
+  onSubmit?: (data: any) => void;
+  /**
+   * Form title
+   */
+  title?: string;
+  /**
+   * Additional CSS class
+   */
+  className?: string;
+}
+
+/**
+ * ${componentName}Form - Reusable form component
+ */
+const ${componentName}Form: React.FC<${componentName}FormProps> = ({
+  onSubmit,
+  title = 'Form',
+  className = '',
+}) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit?.(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className={\`space-y-4 \${className}\`}>
+      {title && <h2 className="text-2xl font-bold mb-4">{title}</h2>}
+      
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          Email
+        </label>
+        <input
+          type="email"
+          id="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          Password
+        </label>
+        <input
+          type="password"
+          id="password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+      </div>
+
+      <${componentName}Button type="submit" variant="primary" className="w-full">
+        Submit
+      </${componentName}Button>
+    </form>
+  );
+};
+
+export default ${componentName}Form;
+`;
+}
+
+export function createUITypesFile(packageName: string): string {
+    const componentName = packageName
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    
+    return `/**
+ * Type definitions for ${packageName}
+ */
+
+export interface ${componentName}Props {
+  /**
+   * Theme variant
+   */
+  theme?: 'light' | 'dark';
+  /**
+   * Custom styles
+   */
+  style?: React.CSSProperties;
+  /**
+   * Additional CSS class
+   */
+  className?: string;
+}
+
+export interface ${componentName}Config {
+  /**
+   * API endpoint
+   */
+  apiUrl?: string;
+  /**
+   * Enable debug mode
+   */
+  debug?: boolean;
+}
+`;
+}
+
+export function createUIPackageReadme(packageName: string): string {
+    const componentName = packageName
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+    
+    return `# ${packageName}
+
+UI components package for ${packageName}. Lightweight, reusable React components.
+
+## Installation
+
+\`\`\`bash
+npm install ${packageName}
+# or
+yarn add ${packageName}
+\`\`\`
+
+## Usage
+
+### Provider Setup
+
+Wrap your application with the ${componentName}Provider:
+
+\`\`\`tsx
+import { ${componentName}Provider } from '${packageName}';
+
+function App() {
+  return (
+    <${componentName}Provider>
+      <YourApp />
+    </${componentName}Provider>
+  );
+}
+\`\`\`
+
+### Using Components
+
+#### Button
+
+\`\`\`tsx
+import { ${componentName}Button } from '${packageName}';
+
+function MyComponent() {
+  return (
+    <${componentName}Button 
+      variant="primary" 
+      size="medium"
+      onClick={() => console.log('Clicked!')}
+    >
+      Click Me
+    </${componentName}Button>
+  );
+}
+\`\`\`
+
+#### Form
+
+\`\`\`tsx
+import { ${componentName}Form } from '${packageName}';
+
+function MyComponent() {
+  const handleSubmit = (data: any) => {
+    console.log('Form submitted:', data);
+  };
+
+  return (
+    <${componentName}Form 
+      title="Login"
+      onSubmit={handleSubmit}
+    />
+  );
+}
+\`\`\`
+
+## Components
+
+- **${componentName}Provider**: Context provider for managing state
+- **${componentName}Button**: Customizable button component
+- **${componentName}Form**: Form component with built-in validation
+
+## Development
+
+### Build
+
+\`\`\`bash
+npm run build
+\`\`\`
+
+### Watch Mode
+
+\`\`\`bash
+npm run dev
+\`\`\`
+
+### Type Check
+
+\`\`\`bash
+npm run type-check
+\`\`\`
+
+### Lint
+
+\`\`\`bash
+npm run lint
+\`\`\`
+
+## Peer Dependencies
+
+This package requires React 18 or higher:
+
+- react ^18.0.0
+- react-dom ^18.0.0
+
+## License
+
+MIT
+`;
+}

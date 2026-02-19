@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createMonorepoPackage, validatePackageName } from '../generators/package';
+import { PackageType } from '../types';
 
 /**
  * Command to add a new package to an existing monorepo
@@ -33,9 +34,34 @@ export async function addPackageToMonorepo(): Promise<void> {
             }
         }
 
+        // Ask for package type
+        const packageTypeChoice = await vscode.window.showQuickPick([
+            {
+                label: '🔧 Backend / Logic Package',
+                description: 'Python package with core logic (auth-shared, utils, models)',
+                detail: 'Creates: src/, tests/, pyproject.toml, requirements.txt',
+                value: 'backend' as PackageType
+            },
+            {
+                label: '🎨 UI Components Package',
+                description: 'React/TypeScript components (auth-ui, shared-components)',
+                detail: 'Creates: src/components/, package.json, tsconfig.json',
+                value: 'ui' as PackageType
+            }
+        ], {
+            placeHolder: 'Select the type of package to create',
+            title: 'Package Type'
+        });
+
+        if (!packageTypeChoice) {
+            return;
+        }
+
+        const packageType = packageTypeChoice.value;
+
         // Ask for package name
         const packageName = await vscode.window.showInputBox({
-            placeHolder: 'e.g., auth-share, data-utils, common-models',
+            placeHolder: packageType === 'backend' ? 'e.g., auth-shared, data-utils, common-models' : 'e.g., auth-ui, shared-components, design-system',
             prompt: 'Enter the package name (lowercase, use hyphens)',
             validateInput: validatePackageName
         });
@@ -60,15 +86,19 @@ export async function addPackageToMonorepo(): Promise<void> {
         // Create the package
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: `Creating package: ${packageName}`,
+            title: `Creating ${packageType} package: ${packageName}`,
             cancellable: false
         }, async (progress) => {
-            await createMonorepoPackage(projectRoot, packageName, progress, packageDescription);
+            await createMonorepoPackage(projectRoot, packageName, progress, packageType, packageDescription);
         });
 
         // Ask if user wants to open the new package
+        const successMessage = packageType === 'backend'
+            ? `Package "${packageName}" created successfully! 🎉\n\nYou can now add your logic to:\n- src/${packageName.replace(/-/g, '_')}/core.py\n- tests/test_core.py`
+            : `Package "${packageName}" created successfully! 🎉\n\nYou can now add your components to:\n- src/components/\n- Run 'npm install' in the package folder`;
+
         const openPackage = await vscode.window.showInformationMessage(
-            `Package "${packageName}" created successfully! 🎉\n\nYou can now add your logic to:\n- src/${packageName.replace(/-/g, '_')}/core.py\n- tests/test_core.py`,
+            successMessage,
             'Open Package',
             'View README',
             'Close'

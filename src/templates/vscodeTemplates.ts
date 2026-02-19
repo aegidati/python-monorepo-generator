@@ -1,6 +1,8 @@
 export function createVSCodeSettings(): string {
     const isWindows = process.platform === 'win32';
-    const pythonPath = isWindows ? "./venv/Scripts/python.exe" : "./venv/bin/python";
+    const pythonPath = isWindows 
+        ? "${workspaceFolder}/venv/Scripts/python.exe" 
+        : "${workspaceFolder}/venv/bin/python";
     return `{
     "python.defaultInterpreterPath": "${pythonPath}",
     "python.terminal.activateEnvironment": true,
@@ -16,7 +18,7 @@ export function createVSCodeSettings(): string {
     "python.sortImports.path": "isort",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": true
+        "source.organizeImports": "explicit"
     },
     "files.exclude": {
         "**/__pycache__": true,

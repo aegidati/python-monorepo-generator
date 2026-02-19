@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ProjectOptions, ProjectTypeChoice } from '../types';
+import { ProjectOptions, ProjectTypeChoice, PackageType } from '../types';
 import { 
     validateProjectName, 
     validateGitHubRepo, 
@@ -91,6 +91,34 @@ export async function createPythonProject(): Promise<void> {
         }
 
         const isMonorepo = projectType.label.includes('Monorepo');
+
+        // If creating a package, ask for package type
+        let packageType: PackageType = 'backend';
+        if (!isMonorepo) {
+            const packageTypeChoice = await vscode.window.showQuickPick([
+                {
+                    label: '🔧 Backend / Logic Package',
+                    description: 'Python package with core logic',
+                    detail: 'Creates: src/, tests/, pyproject.toml, requirements.txt',
+                    value: 'backend' as PackageType
+                },
+                {
+                    label: '🎨 UI Components Package',
+                    description: 'React/TypeScript components',
+                    detail: 'Creates: src/components/, package.json, tsconfig.json',
+                    value: 'ui' as PackageType
+                }
+            ], {
+                placeHolder: 'Select the type of package to create',
+                title: 'Package Type'
+            });
+
+            if (!packageTypeChoice) {
+                return;
+            }
+
+            packageType = packageTypeChoice.value;
+        }
 
         // Ask if user wants Git integration
         const gitIntegration = await vscode.window.showQuickPick(
@@ -202,7 +230,7 @@ export async function createPythonProject(): Promise<void> {
                         projectOptions.githubRepo
                     );
                 } else {
-                    await createStandalonePackage(projectPath, projectName, progress, undefined);
+                    await createStandalonePackage(projectPath, projectName, progress, packageType, undefined);
                 }
 
                 if (projectOptions.gitIntegration) {
