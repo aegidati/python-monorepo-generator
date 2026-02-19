@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { createPythonProject, setupPythonProject, startServers } from './commands';
+import { createPythonProject, setupPythonProject, startServers, addPackageToMonorepo, listMonorepoPackages } from './commands';
 import { checkPrerequisites, showPrerequisiteDialog, installMissingExtensions } from './utils';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -48,12 +48,26 @@ export function activate(context: vscode.ExtensionContext) {
         startServers
     );
 
+    // Command to add package to monorepo
+    const addPackageDisposable = vscode.commands.registerCommand(
+        'pythonMonorepoGenerator.addPackage',
+        addPackageToMonorepo
+    );
+
+    // Command to list packages in monorepo
+    const listPackagesDisposable = vscode.commands.registerCommand(
+        'pythonMonorepoGenerator.listPackages',
+        listMonorepoPackages
+    );
+
     context.subscriptions.push(
         createProjectDisposable, 
         checkPrereqDisposable, 
         installExtensionsDisposable,
         setupProjectDisposable,
-        startServersDisposable
+        startServersDisposable,
+        addPackageDisposable,
+        listPackagesDisposable
     );
 }
 

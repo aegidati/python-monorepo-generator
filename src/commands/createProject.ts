@@ -15,7 +15,7 @@ import {
 } from '../utils';
 import { initializeGitRepository } from '../utils/git';
 import { createMonorepoStructure } from '../generators/monorepo';
-// import { createPackageStructure } from '../generators/package'; // TODO: Create this
+import { createStandalonePackage, validatePackageName } from '../generators/package';
 
 export async function createPythonProject(): Promise<void> {
     try {
@@ -58,7 +58,10 @@ export async function createPythonProject(): Promise<void> {
         const projectName = await vscode.window.showInputBox({
             placeHolder: 'Enter project name',
             prompt: 'What name would you like for your Python project?',
-            validateInput: validateProjectName
+            validateInput: (value) => {
+                // Try both validators
+                return validateProjectName(value) || validatePackageName(value);
+            }
         });
 
         if (!projectName) {
@@ -199,9 +202,7 @@ export async function createPythonProject(): Promise<void> {
                         projectOptions.githubRepo
                     );
                 } else {
-                    // await createPackageStructure(projectPath, projectName, progress);
-                    // TODO: Implement package structure creation
-                    progress.report({ message: 'Package creation not yet implemented in refactored version' });
+                    await createStandalonePackage(projectPath, projectName, progress, undefined);
                 }
 
                 if (projectOptions.gitIntegration) {

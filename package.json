@@ -1,7 +1,7 @@
 {
     "name": "python-monorepo-generator",
     "displayName": "Python Monorepo Generator",
-    "description": "Generate complete Python monorepo structures or single packages with backend, frontend, mobile, apps, packages, docs, and development configurations",
+    "description": "Generate complete Python monorepos or standalone packages with backend, frontend, mobile, and package management. Includes GitHub integration, VS Code tasks, and PyPI publishing tools.",
     "version": "0.0.1",
     "publisher": "aegidati",
     "author": {
@@ -31,7 +31,15 @@
         "fastapi",
         "project-structure",
         "pytest",
-        "setuptools"
+        "setuptools",
+        "pyproject",
+        "pypi",
+        "github",
+        "vscode",
+        "package-manager",
+        "pep517",
+        "pep518",
+        "src-layout"
     ],
     "engines": {
         "vscode": "^1.74.0"
@@ -45,7 +53,9 @@
         "onCommand:pythonMonorepoGenerator.checkPrerequisites",
         "onCommand:pythonMonorepoGenerator.installExtensions",
         "onCommand:pythonMonorepoGenerator.setupProject",
-        "onCommand:pythonMonorepoGenerator.startServers"
+        "onCommand:pythonMonorepoGenerator.startServers",
+        "onCommand:pythonMonorepoGenerator.addPackage",
+        "onCommand:pythonMonorepoGenerator.listPackages"
     ],
     "main": "./out/extension.js",
     "contributes": {
@@ -73,6 +83,16 @@
             {
                 "command": "pythonMonorepoGenerator.startServers",
                 "title": "Start Servers (Backend, Frontend, Mobile)",
+                "category": "Python Generator"
+            },
+            {
+                "command": "pythonMonorepoGenerator.addPackage",
+                "title": "Add Package to Monorepo",
+                "category": "Python Generator"
+            },
+            {
+                "command": "pythonMonorepoGenerator.listPackages",
+                "title": "List Monorepo Packages",
                 "category": "Python Generator"
             }
         ]

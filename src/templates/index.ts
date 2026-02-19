@@ -3,6 +3,7 @@ export * from './monorepoTemplates';
 export * from './backendTemplates';
 export * from './frontendTemplates';
 export * from './mobileTemplates';
+export * from './packageTemplates';
 export * from './scriptsTemplates';
 export * from './vscodeTemplates';
 export * from './gettingStartedTemplate';

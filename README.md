@@ -5,14 +5,15 @@ A VS Code extension that generates complete Python monorepo structures **or** si
 ## Features
 
 - **Flexible Project Creation**: Choose between complete monorepo or single Python package
-- **Interactive Setup**: Prompts for project name with input validation
+- **Package Management**: Add packages to existing monorepos with interactive commands
+- **Interactive Setup**: Prompts for project name with Python-compliant validation
 - **Git Integration**: Optional Git initialization with GitHub remote setup
-- **GitHub Ready**: Automatically configures Git with user info and remote repository
+- **GitHub Ready**: Automatically creates GitHub repositories with OAuth authentication
 - **Complete Monorepo Structure**: Creates backend, frontend, mobile, apps, packages, docs, scripts folders
-- **Lightweight Package Option**: Creates focused Python package with tests and documentation
+- **Lightweight Package Option**: Creates focused Python package ready for PyPI distribution
 - **VS Code Integration**: Includes settings, tasks, and debug configurations
 - **Development Tools**: Pre-configured with Black, isort, MyPy, Flake8, and pytest
-- **Workspace File**: Generates appropriate project files for optimal development experience
+- **PEP 517/518 Compliant**: Modern pyproject.toml configuration for all projects
 
 ## Project Types
 
@@ -28,11 +29,14 @@ Creates a full-featured monorepo with:
 
 ### 📦 Python Package  
 Creates a focused package structure with:
-- **src/ layout**: Modern Python package structure
-- **Testing**: pytest setup with coverage
-- **Documentation**: API docs and examples
-- **Development tools**: All linting/formatting configured
-- **setup.py & pyproject.toml**: Ready for distribution
+- **src/ layout**: Modern Python package structure (PEP 420)
+- **Testing**: pytest setup with coverage and conftest.py
+- **Documentation**: README, CHANGELOG, LICENSE, and docs folder
+- **Development tools**: All linting/formatting configured (black, isort, mypy)
+- **pyproject.toml**: PEP 517/518 compliant configuration
+- **Build tools**: setuptools, build, and twine for PyPI publishing
+- **Type hints**: py.typed marker file for PEP 561 compliance
+- **GitHub Actions ready**: CI/CD templates included
 
 ## Usage
 
@@ -61,12 +65,56 @@ After creating a project, use the **Setup Project** command to automatically ins
 
 This command automates all the manual setup steps described in the generated `GETTING_STARTED.md` file.
 
+### Adding Packages to Monorepo
+
+Once you have a monorepo, you can add shared packages using the interactive command:
+
+1. Open your monorepo project in VS Code
+2. Run **"Python Generator: Add Package to Monorepo"** from the Command Palette
+3. Enter the package name (e.g., `auth-share`, `data-utils`, `common-models`)
+   - Use lowercase letters, numbers, hyphens, or underscores
+   - Must start with a letter
+   - Cannot be a Python reserved keyword
+4. Optionally enter a description
+5. The package is created in `packages/your-package-name/` with:
+   - Modern `src/` layout structure
+   - pyproject.toml configuration
+   - Test setup with pytest
+   - README and documentation
+6. Start developing your shared library in `src/your_package_name/core.py`
+
+**Example Package Structure:**
+```
+packages/
+└── auth-share/
+    ├── src/
+    │   └── auth_share/
+    │       ├── __init__.py
+    │       └── core.py        ← Your logic here
+    ├── tests/
+    │   ├── __init__.py
+    │   └── test_core.py
+    ├── pyproject.toml
+    ├── requirements.txt
+    └── README.md
+```
+
+**Listing All Packages:**
+Run **"Python Generator: List Monorepo Packages"** to view all packages, their versions, and descriptions. Click on any package to navigate to it in the explorer.
+
 ## Available Commands
 
 Access all commands via the Command Palette (Ctrl+Shift+P / Cmd+Shift+P):
 
-- **Python Generator: Create Python Project** - Generate a new monorepo or package
+### Project Creation
+- **Python Generator: Create Python Project** - Generate a new monorepo or standalone package
 - **Python Generator: Setup Project** - Automatically install dependencies and configure the project
+
+### Package Management (Monorepo)
+- **Python Generator: Add Package to Monorepo** - Add a new shared package to existing monorepo
+- **Python Generator: List Monorepo Packages** - View and navigate all packages in the monorepo
+
+### Development Tools
 - **Python Generator: Start Servers** - Start backend, frontend web, and/or mobile servers
 - **Python Generator: Check Development Prerequisites** - Verify Python, Git, and Node.js installation
 - **Python Generator: Install Python Development Extensions** - Install recommended VS Code extensions
