@@ -171,7 +171,7 @@ Press **F5** to start debugging:
 - [ ] Customize frontend in \`frontend/web/src/app.js\`
 - [ ] Write tests in \`backend/tests/\`
 - [ ] Update project documentation in \`README.md\`
-${hasGit ? `- [ ] Make your first commit: \`git add . && git commit -m "Initial commit"\`` : '- [ ] Initialize Git repository: `git init`'}
+${hasGit ? `- [ ] Make your first commit: \`git add . && git commit -m "Initial commit"\`` : '- [ ] Initialize Git repository: `git init -b main`'}
 ${githubRepo ? `- [ ] Push to GitHub: \`git remote add origin https://github.com/${githubRepo}.git && git push -u origin main\`` : ''}
 
 ## 🧪 Testing

@@ -35,6 +35,92 @@ function httpsRequest(
     });
 }
 
+export async function validateGitHubRepositoryForBootstrap(
+    repoName: string
+): Promise<{ valid: boolean; message?: string }> {
+    try {
+        const [owner, repo] = repoName.split('/');
+
+        if (!owner || !repo) {
+            return {
+                valid: false,
+                message: 'Invalid repository name format. Expected: username/repository-name'
+            };
+        }
+
+        const session = await vscode.authentication.getSession('github', ['repo'], { createIfNone: true });
+
+        if (!session) {
+            return {
+                valid: false,
+                message: 'GitHub authentication failed. Please sign in and try again.'
+            };
+        }
+
+        const commonHeaders = {
+            'Authorization': `token ${session.accessToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'VSCode-Python-Monorepo-Generator'
+        };
+
+        const checkResponse = await httpsRequest(
+            `https://api.github.com/repos/${owner}/${repo}`,
+            {
+                method: 'GET',
+                headers: commonHeaders
+            }
+        );
+
+        if (checkResponse.statusCode === 404) {
+            return { valid: true };
+        }
+
+        if (checkResponse.statusCode !== 200) {
+            return {
+                valid: false,
+                message: `Unable to verify repository state (HTTP ${checkResponse.statusCode}).`
+            };
+        }
+
+        const commitsResponse = await httpsRequest(
+            `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`,
+            {
+                method: 'GET',
+                headers: commonHeaders
+            }
+        );
+
+        if (commitsResponse.statusCode === 409) {
+            return { valid: true };
+        }
+
+        if (commitsResponse.statusCode !== 200) {
+            return {
+                valid: false,
+                message: `Unable to verify repository commits (HTTP ${commitsResponse.statusCode}).`
+            };
+        }
+
+        const commits = JSON.parse(commitsResponse.body);
+        const hasCommits = Array.isArray(commits) && commits.length > 0;
+
+        if (hasCommits) {
+            return {
+                valid: false,
+                message: `Repository ${repoName} already has commits. Use a new empty repository.`
+            };
+        }
+
+        return { valid: true };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+            valid: false,
+            message: `Failed to validate repository state: ${errorMessage}`
+        };
+    }
+}
+
 /**
  * Create a GitHub repository using VS Code's GitHub authentication
  * @param repoName Repository name (format: username/repo-name)
@@ -79,8 +165,33 @@ export async function createGitHubRepository(
         );
 
         if (checkResponse.statusCode === 200) {
-            // Repository already exists
-            vscode.window.showInformationMessage(`Repository ${repoName} already exists on GitHub.`);
+            const commitsResponse = await httpsRequest(
+                `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`,
+                {
+                    method: 'GET',
+                    headers: commonHeaders
+                }
+            );
+
+            if (commitsResponse.statusCode === 200) {
+                let hasCommits = false;
+
+                try {
+                    const commits = JSON.parse(commitsResponse.body);
+                    hasCommits = Array.isArray(commits) && commits.length > 0;
+                } catch {
+                    hasCommits = true;
+                }
+
+                if (hasCommits) {
+                    vscode.window.showErrorMessage(
+                        `Repository ${repoName} already exists and is not empty. Use a new empty repository to avoid push conflicts.`
+                    );
+                    return false;
+                }
+            }
+
+            vscode.window.showInformationMessage(`Repository ${repoName} already exists on GitHub and is empty.`);
             return true;
         }
 
@@ -124,6 +235,29 @@ export async function createGitHubRepository(
     }
 }
 
+async function initializeRepositoryOnMainBranch(
+    projectPath: string,
+    env: NodeJS.ProcessEnv
+): Promise<void> {
+    try {
+        await execAsync('git init -b main', { cwd: projectPath, env });
+        return;
+    } catch {
+    }
+
+    await execAsync('git init', { cwd: projectPath, env });
+
+    try {
+        await execAsync('git symbolic-ref HEAD refs/heads/main', { cwd: projectPath, env });
+    } catch {
+    }
+
+    try {
+        await execAsync('git branch -M main', { cwd: projectPath, env });
+    } catch {
+    }
+}
+
 export async function initializeGitRepository(
     projectPath: string, 
     githubRepo: string, 
@@ -138,8 +272,7 @@ export async function initializeGitRepository(
             GIT_TERMINAL_PROMPT: '0'
         };
 
-        // Initialize git repository
-        await execAsync('git init', { cwd: projectPath, env: gitEnv });
+        await initializeRepositoryOnMainBranch(projectPath, gitEnv);
 
         // Configure git user
         await execAsync(`git config user.name "${userName}"`, { cwd: projectPath, env: gitEnv });
@@ -182,5 +315,21 @@ export async function initializeGitRepository(
     } catch (error) {
         console.error('Git initialization error:', error);
         vscode.window.showWarningMessage(`Git initialization failed: ${error}`);
+    }
+}
+
+export async function initializeLocalGitRepository(projectPath: string): Promise<void> {
+    try {
+        const gitEnv = {
+            ...process.env,
+            GIT_EDITOR: 'true',
+            GIT_TERMINAL_PROMPT: '0'
+        };
+
+        await initializeRepositoryOnMainBranch(projectPath, gitEnv);
+        await execAsync('git add .', { cwd: projectPath, env: gitEnv });
+    } catch (error) {
+        console.error('Local Git initialization error:', error);
+        throw error;
     }
 }

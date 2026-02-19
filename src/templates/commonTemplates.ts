@@ -80,6 +80,20 @@ logs
 `;
 }
 
+export function createGitattributes(): string {
+    return `* text=auto
+
+# Keep lockfiles stable across platforms
+package-lock.json text eol=lf
+**/package-lock.json text eol=lf
+
+# Common script defaults
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+`;
+}
+
 export function createRootRequirements(): string {
     return `# Production dependencies
 fastapi>=0.115.0

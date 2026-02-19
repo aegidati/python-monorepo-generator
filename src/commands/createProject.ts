@@ -9,51 +9,18 @@ import {
     validateGitEmail,
     checkDirectoryExists,
     removeDirectory,
-    checkPrerequisites,
+    checkPrerequisitesByProfile,
+    PrerequisiteProfile,
     showPrerequisiteDialog,
-    installMissingExtensions
+    installMissingExtensions,
+    validateGitHubRepositoryForBootstrap
 } from '../utils';
-import { initializeGitRepository } from '../utils/git';
+import { initializeGitRepository, initializeLocalGitRepository } from '../utils/git';
 import { createMonorepoStructure } from '../generators/monorepo';
 import { createStandalonePackage, validatePackageName } from '../generators/package';
 
 export async function createPythonProject(): Promise<void> {
     try {
-        // Check prerequisites first
-        const prerequisiteResult = await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: "Checking development prerequisites...",
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ message: 'Verifying Python installation...' });
-            return await checkPrerequisites();
-        });
-        
-        // Handle prerequisite results
-        if (!prerequisiteResult.canProceed) {
-            const continueAnyway = await showPrerequisiteDialog(prerequisiteResult);
-            if (!continueAnyway) {
-                return;
-            }
-        } else if (prerequisiteResult.warnings.length > 0) {
-            // Show optional installation dialog for warnings
-            const choice = await vscode.window.showInformationMessage(
-                prerequisiteResult.message,
-                'Continue',
-                'Install Extensions',
-                'View Details'
-            );
-
-            if (choice === 'Install Extensions') {
-                await installMissingExtensions();
-            } else if (choice === 'View Details') {
-                await showPrerequisiteDialog(prerequisiteResult);
-                return;
-            } else if (!choice) {
-                return; // User cancelled
-            }
-        }
-
         // Ask user for project name
         const projectName = await vscode.window.showInputBox({
             placeHolder: 'Enter project name',
@@ -120,25 +87,97 @@ export async function createPythonProject(): Promise<void> {
             packageType = packageTypeChoice.value;
         }
 
+        const prerequisiteProfile: PrerequisiteProfile = isMonorepo
+            ? 'monorepo'
+            : (packageType === 'ui' ? 'package-ui' : 'package-backend');
+
+        const prerequisiteResult = await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Checking development prerequisites...',
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ message: 'Validating required tooling...' });
+            return await checkPrerequisitesByProfile(prerequisiteProfile);
+        });
+
+        if (!prerequisiteResult.canProceed) {
+            const continueAnyway = await showPrerequisiteDialog(prerequisiteResult);
+            if (!continueAnyway) {
+                return;
+            }
+        } else if (prerequisiteResult.warnings.length > 0) {
+            const hasMissingExtensions = (prerequisiteResult.details.extensions?.missing.length ?? 0) > 0;
+            const extensionWarningsCount = prerequisiteResult.warnings.filter(warning =>
+                warning.includes('Python extensions')
+            ).length;
+            const onlyExtensionWarnings = hasMissingExtensions && extensionWarningsCount === prerequisiteResult.warnings.length;
+
+            if (!onlyExtensionWarnings) {
+                const choice = await vscode.window.showInformationMessage(
+                    prerequisiteResult.message,
+                    'Continue',
+                    'Install Extensions',
+                    'View Details'
+                );
+
+                if (choice === 'Install Extensions') {
+                    await installMissingExtensions();
+                } else if (choice === 'View Details') {
+                    await showPrerequisiteDialog(prerequisiteResult);
+                    return;
+                } else if (!choice) {
+                    return;
+                }
+            }
+        }
+
         // Ask if user wants Git integration
         const gitIntegration = await vscode.window.showQuickPick(
-            ['Yes, initialize Git and GitHub integration', 'No, just create project structure'],
+            ['Yes, initialize local Git repository (GitHub optional)', 'No, skip Git initialization'],
             {
-                placeHolder: 'Do you want to initialize Git and GitHub integration?'
+                placeHolder: 'Do you want to initialize a local Git repository?'
             }
         );
+
+        if (!gitIntegration) {
+            return;
+        }
+
+        const shouldInitializeLocalGit = isMonorepo || gitIntegration.startsWith('Yes');
 
         let githubRepo = '';
         let gitUserName = '';
         let gitUserEmail = '';
 
-        if (gitIntegration?.startsWith('Yes')) {
-            // Get GitHub repository info
-            githubRepo = await vscode.window.showInputBox({
-                placeHolder: 'username/repository-name',
-                prompt: 'Enter GitHub repository (username/repo-name) - Optional, press Enter to skip',
-                validateInput: validateGitHubRepo
-            }) || '';
+        if (gitIntegration.startsWith('Yes')) {
+            const configureGitHubNow = await vscode.window.showQuickPick(
+                ['Yes, configure GitHub remote now', 'No, local Git only'],
+                {
+                    placeHolder: 'Do you want to configure a GitHub repository now?'
+                }
+            );
+
+            if (!configureGitHubNow) {
+                return;
+            }
+
+            if (configureGitHubNow.startsWith('Yes')) {
+                githubRepo = await vscode.window.showInputBox({
+                    placeHolder: 'username/repository-name',
+                    prompt: 'Enter GitHub repository (username/repo-name)',
+                    validateInput: validateGitHubRepo
+                }) || '';
+
+                if (!githubRepo) {
+                    return;
+                }
+
+                const repositoryValidation = await validateGitHubRepositoryForBootstrap(githubRepo);
+                if (!repositoryValidation.valid) {
+                    vscode.window.showErrorMessage(repositoryValidation.message || 'Invalid GitHub repository state.');
+                    return;
+                }
+            }
 
             // Get Git user info
             gitUserName = await vscode.window.showInputBox({
@@ -208,7 +247,7 @@ export async function createPythonProject(): Promise<void> {
             name: projectName,
             type: isMonorepo ? 'monorepo' : 'package',
             path: projectPath,
-            gitIntegration: gitIntegration?.startsWith('Yes'),
+            gitIntegration: shouldInitializeLocalGit,
             githubRepo,
             gitUserName,
             gitUserEmail
@@ -226,7 +265,7 @@ export async function createPythonProject(): Promise<void> {
                         projectPath, 
                         projectName, 
                         progress,
-                        projectOptions.gitIntegration,
+                        true,
                         projectOptions.githubRepo
                     );
                 } else {
@@ -235,7 +274,12 @@ export async function createPythonProject(): Promise<void> {
 
                 if (projectOptions.gitIntegration) {
                     progress.report({ message: 'Initializing Git repository...' });
-                    await initializeGitRepository(projectPath, githubRepo, gitUserName, gitUserEmail);
+
+                    if (gitUserName && gitUserEmail) {
+                        await initializeGitRepository(projectPath, githubRepo, gitUserName, gitUserEmail);
+                    } else {
+                        await initializeLocalGitRepository(projectPath);
+                    }
                 }
 
             } catch (error) {

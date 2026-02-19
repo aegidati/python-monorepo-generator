@@ -1,7 +1,7 @@
 {
     "name": "python-monorepo-generator",
     "displayName": "Python Monorepo Generator",
-    "description": "Generate complete Python monorepos or standalone packages with backend, frontend, mobile, and package management. Includes GitHub integration, VS Code tasks, and PyPI publishing tools.",
+    "description": "Generate complete Python monorepos or standalone packages with backend, frontend, mobile support. Create Python logic packages AND React/TypeScript UI component packages. Includes GitHub integration, VS Code tasks, and PyPI publishing tools.",
     "version": "0.0.1",
     "publisher": "aegidati",
     "author": {
@@ -27,7 +27,10 @@
         "backend",
         "frontend",
         "mobile",
+        "react",
         "react-native",
+        "typescript",
+        "ui-components",
         "fastapi",
         "project-structure",
         "pytest",

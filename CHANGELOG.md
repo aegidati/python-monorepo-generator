@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **UI Package Support**: Create React/TypeScript component packages alongside Python packages
+  - New package type selection: Backend (Python) or UI (React/TypeScript)
+  - Complete React component templates with Provider, Button, Form
+  - TypeScript configuration with tsup for building
+  - NPM package.json with proper peer dependencies
+  - Example usage documentation for importing in frontend apps
 - **Package Generator System**: Complete implementation for creating Python packages
   - `createMonorepoPackage()` - Add packages to existing monorepos
   - `createStandalonePackage()` - Create distributable Python packages
@@ -38,9 +44,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored Git integration to work consistently across project types
 
 ### Fixed
+- **Python Virtual Environment Path Resolution**: Fixed `Failed to resolve env` error
+  - Changed from relative paths (`./venv/Scripts/python.exe`) to VS Code variables (`${workspaceFolder}/venv/Scripts/python.exe`)
+  - Updated both `vscodeTemplates.ts` and `monorepoTemplates.ts`
+  - Fixed cross-platform path handling (Windows/Linux/macOS)
+- **VS Code Settings for Extension Workspace**: Added settings.json to disable Python analysis in TypeScript-only workspace
 - Removed unused `gitIntegration` parameter from `createStandalonePackage()`
 - Resolved export conflicts between template functions
 - Fixed JSON syntax errors in package.json command definitions
+- Updated `editor.codeActionsOnSave` to use modern "explicit" syntax
 
 ### Technical
 - Added `packageTemplates.ts` with comprehensive package generation templates

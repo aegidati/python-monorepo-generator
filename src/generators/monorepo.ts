@@ -13,6 +13,7 @@ import {
 } from '../templates/monorepoTemplates';
 import { 
     createGitignore,
+    createGitattributes,
     createRootRequirements,
     createDevRequirements 
 } from '../templates/commonTemplates';
@@ -85,6 +86,7 @@ export async function createMonorepoStructure(
     fs.writeFileSync(path.join(projectPath, 'GETTING_STARTED.md'), createGettingStarted(name, gitIntegration, githubRepo));
     fs.writeFileSync(path.join(projectPath, 'pyproject.toml'), createMonorepoPyprojectToml(name));
     fs.writeFileSync(path.join(projectPath, '.gitignore'), createGitignore());
+    fs.writeFileSync(path.join(projectPath, '.gitattributes'), createGitattributes());
     fs.writeFileSync(path.join(projectPath, 'requirements.txt'), createRootRequirements());
     fs.writeFileSync(path.join(projectPath, 'requirements-dev.txt'), createDevRequirements());
 

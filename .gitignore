@@ -78,11 +78,6 @@ jspm_packages/
 out/
 *.vsix
 
-# VS Code settings (keep local only)
-.vscode/settings.json
-.vscode/launch.json
-.vscode/extensions.json
-
 # Operating System Files
 .DS_Store
 Thumbs.db

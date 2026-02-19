@@ -32,7 +32,10 @@ export interface ExtensionInfo {
     installed: string[];
     missing: string[];
     canAutoInstall: boolean;
+    detectionNote?: string;
 }
+
+export type PrerequisiteProfile = 'monorepo' | 'package-backend' | 'package-ui';
 
 const REQUIRED_VERSIONS = {
     python: { min: '3.8.0', recommended: '3.11.0' },
@@ -49,6 +52,11 @@ const REQUIRED_EXTENSIONS = [
 ];
 
 export async function checkPrerequisites(): Promise<PrerequisiteCheckResult> {
+    const profile: PrerequisiteProfile = 'monorepo';
+    return checkPrerequisitesByProfile(profile);
+}
+
+export async function checkPrerequisitesByProfile(profile: PrerequisiteProfile): Promise<PrerequisiteCheckResult> {
     const result: PrerequisiteCheckResult = {
         passed: false,
         message: '',
@@ -58,23 +66,29 @@ export async function checkPrerequisites(): Promise<PrerequisiteCheckResult> {
         details: {}
     };
 
-    // Check Python installation with version check
-    result.details.python = await checkPythonAdvanced();
-    if (!result.details.python.installed) {
-        result.errors.push(`❌ Python not found. Required: ${REQUIRED_VERSIONS.python.min}+`);
-    } else if (!result.details.python.compatible) {
-        result.errors.push(`❌ Python ${result.details.python.version} is outdated. Required: ${REQUIRED_VERSIONS.python.min}+`);
-    } else if (!result.details.python.pathConfigured) {
-        result.warnings.push(`⚠️ Python path configuration may need adjustment`);
+    const requiresPython = profile !== 'package-ui';
+    const requiresNode = profile === 'monorepo' || profile === 'package-ui';
+    const checksExtensions = profile !== 'package-ui';
+
+    if (requiresPython) {
+        result.details.python = await checkPythonAdvanced();
+        if (!result.details.python.installed) {
+            result.errors.push(`❌ Python not found. Required: ${REQUIRED_VERSIONS.python.min}+`);
+        } else if (!result.details.python.compatible) {
+            result.errors.push(`❌ Python ${result.details.python.version} is outdated. Required: ${REQUIRED_VERSIONS.python.min}+`);
+        } else if (!result.details.python.pathConfigured) {
+            result.warnings.push(`⚠️ Python path configuration may need adjustment`);
+        }
     }
 
-    // Check VS Code extensions with auto-install capability
-    result.details.extensions = await checkExtensionsAdvanced();
-    if (result.details.extensions.missing.length > 0) {
-        if (result.details.extensions.canAutoInstall) {
-            result.warnings.push(`⚠️ Missing ${result.details.extensions.missing.length} Python extensions (can auto-install)`);
-        } else {
-            result.warnings.push(`⚠️ Missing ${result.details.extensions.missing.length} Python extensions`);
+    if (checksExtensions) {
+        result.details.extensions = await checkExtensionsAdvanced();
+        if (result.details.extensions.missing.length > 0) {
+            if (result.details.extensions.canAutoInstall) {
+                result.warnings.push(`⚠️ Missing ${result.details.extensions.missing.length} Python extensions (can auto-install)`);
+            } else {
+                result.warnings.push(`⚠️ Missing ${result.details.extensions.missing.length} Python extensions`);
+            }
         }
     }
 
@@ -86,32 +100,53 @@ export async function checkPrerequisites(): Promise<PrerequisiteCheckResult> {
         result.warnings.push(`⚠️ Git ${result.details.git.version} is outdated. Recommended: ${REQUIRED_VERSIONS.git.recommended}+`);
     }
 
-    // Check Node.js installation with version check  
-    result.details.nodejs = await checkNodeJsAdvanced();
-    if (!result.details.nodejs.installed) {
-        result.warnings.push(`⚠️ Node.js not found. Required for frontend development`);
-    } else if (!result.details.nodejs.compatible) {
-        result.warnings.push(`⚠️ Node.js ${result.details.nodejs.version} is outdated. Required: ${REQUIRED_VERSIONS.nodejs.min}+`);
+    if (requiresNode) {
+        result.details.nodejs = await checkNodeJsAdvanced();
+        if (!result.details.nodejs.installed) {
+            result.errors.push(`❌ Node.js not found. Required: ${REQUIRED_VERSIONS.nodejs.min}+`);
+        } else if (!result.details.nodejs.compatible) {
+            result.errors.push(`❌ Node.js ${result.details.nodejs.version} is outdated. Required: ${REQUIRED_VERSIONS.nodejs.min}+`);
+        }
     }
 
-    // Determine if we can proceed and overall status
-    const pythonOk = result.details.python.installed && result.details.python.compatible;
-    result.canProceed = pythonOk;
-    result.passed = pythonOk && 
-                   result.details.extensions!.missing.length === 0 &&
-                   result.details.git!.installed && 
-                   result.details.nodejs!.installed;
+    const pythonOk = !requiresPython || (result.details.python?.installed === true && result.details.python.compatible);
+    const nodeOk = !requiresNode || (result.details.nodejs?.installed === true && result.details.nodejs.compatible);
+    result.canProceed = pythonOk && nodeOk;
+    result.passed = result.canProceed && result.warnings.length === 0 && result.errors.length === 0;
 
-    // Create summary message with version details
     if (result.passed) {
         result.message = `✅ All prerequisites met!\n\n📋 Environment Details:\n${getVersionSummary(result.details)}`;
     } else if (result.canProceed) {
         result.message = `⚠️ Ready to proceed with some missing optional components.\n\n📋 Environment Status:\n${getVersionSummary(result.details)}`;
     } else {
-        result.message = `❌ Critical prerequisites missing. Python ${REQUIRED_VERSIONS.python.min}+ is required.\n\n📋 Current Environment:\n${getVersionSummary(result.details)}`;
+        result.message = `❌ Critical prerequisites missing for ${getProfileLabel(profile)}. ${getRequiredComponents(profile)} required.\n\n📋 Current Environment:\n${getVersionSummary(result.details)}`;
     }
 
     return result;
+}
+
+function getProfileLabel(profile: PrerequisiteProfile): string {
+    if (profile === 'monorepo') {
+        return 'monorepo creation';
+    }
+
+    if (profile === 'package-ui') {
+        return 'UI package creation';
+    }
+
+    return 'backend package creation';
+}
+
+function getRequiredComponents(profile: PrerequisiteProfile): string {
+    if (profile === 'monorepo') {
+        return `Python ${REQUIRED_VERSIONS.python.min}+ and Node.js ${REQUIRED_VERSIONS.nodejs.min}+ are`;
+    }
+
+    if (profile === 'package-ui') {
+        return `Node.js ${REQUIRED_VERSIONS.nodejs.min}+ is`;
+    }
+
+    return `Python ${REQUIRED_VERSIONS.python.min}+ is`;
 }
 
 function getVersionSummary(details: PrerequisiteCheckResult['details']): string {
@@ -139,8 +174,12 @@ function getVersionSummary(details: PrerequisiteCheckResult['details']): string 
     }
 
     if (details.extensions) {
-        const status = details.extensions.missing.length === 0 ? '✅' : '⚠️';
-        lines.push(`${status} VS Code Extensions: ${details.extensions.installed.length}/${REQUIRED_EXTENSIONS.length} installed`);
+        if (details.extensions.detectionNote) {
+            lines.push(`ℹ️ VS Code Extensions: ${details.extensions.detectionNote}`);
+        } else {
+            const status = details.extensions.missing.length === 0 ? '✅' : '⚠️';
+            lines.push(`${status} VS Code Extensions: ${details.extensions.installed.length}/${REQUIRED_EXTENSIONS.length} installed`);
+        }
     }
 
     return lines.join('\n');
@@ -246,20 +285,38 @@ async function checkNodeJsAdvanced(): Promise<VersionInfo> {
 }
 
 async function checkExtensionsAdvanced(): Promise<ExtensionInfo> {
-    const installedIds = vscode.extensions.all
-        .filter(ext => !ext.packageJSON.isBuiltin)
-        .map(ext => ext.id.toLowerCase());
+    const appName = vscode.env.appName.toLowerCase();
+    const hasDevHostAppName = appName.includes('extension development host');
+    const hasDevHostArg = process.argv.some(arg => arg.includes('--extensionDevelopmentPath='));
+    const hasDevHostEnv = process.env.VSCODE_EXTENSION_DEVELOPMENT === 'true';
+    const isExtensionDevelopmentHost = hasDevHostAppName || hasDevHostArg || hasDevHostEnv;
+    const installedIds = new Set(
+        vscode.extensions.all.map(ext => ext.id.toLowerCase())
+    );
 
     const installed: string[] = [];
     const missing: string[] = [];
 
     REQUIRED_EXTENSIONS.forEach(extId => {
-        if (installedIds.includes(extId.toLowerCase())) {
+        const normalizedId = extId.toLowerCase();
+        const directMatch = vscode.extensions.getExtension(extId) || vscode.extensions.getExtension(normalizedId);
+        const scannedMatch = installedIds.has(normalizedId);
+
+        if (directMatch || scannedMatch) {
             installed.push(extId);
         } else {
             missing.push(extId);
         }
     });
+
+    if (isExtensionDevelopmentHost && installed.length === 0 && missing.length === REQUIRED_EXTENSIONS.length) {
+        return {
+            installed: [],
+            missing: [],
+            canAutoInstall: true,
+            detectionNote: 'check skipped in Extension Development Host'
+        };
+    }
 
     return {
         installed,
@@ -425,7 +482,12 @@ async function configurePythonPath(): Promise<void> {
 
             if (choice === 'Yes, Configure') {
                 const config = vscode.workspace.getConfiguration('python');
-                await config.update('defaultInterpreterPath', pythonPath, vscode.ConfigurationTarget.Global);
+                const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+                const target = workspaceFolder
+                    ? vscode.ConfigurationTarget.WorkspaceFolder
+                    : vscode.ConfigurationTarget.Global;
+
+                await config.update('defaultInterpreterPath', pythonPath, target);
                 vscode.window.showInformationMessage('✅ Python interpreter configured for VS Code!');
             }
         }

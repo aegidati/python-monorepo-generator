@@ -22,7 +22,7 @@ import {
     createUITypesFile,
     createUIPackageReadme
 } from '../templates/packageTemplates';
-import { createGitignore } from '../templates/commonTemplates';
+import { createGitignore, createGitattributes } from '../templates/commonTemplates';
 import {
     createVSCodeSettings,
     createPackageTasks,
@@ -236,6 +236,11 @@ coverage/
 `
         );
 
+    fs.writeFileSync(
+        path.join(projectPath, '.gitattributes'),
+        createGitattributes()
+    );
+
         fs.writeFileSync(
             path.join(projectPath, 'LICENSE'),
             `MIT License
@@ -352,6 +357,11 @@ See [README.md](../README.md) for usage examples.
 }`
         );
 
+        fs.writeFileSync(
+            path.join(projectPath, '.vscode', '.setup_pending'),
+            ''
+        );
+
         progress.report({ message: 'UI package structure created successfully!' });
         return;
     }
@@ -397,6 +407,11 @@ twine>=4.0.0
     fs.writeFileSync(
         path.join(projectPath, '.gitignore'),
         createGitignore()
+    );
+
+    fs.writeFileSync(
+        path.join(projectPath, '.gitattributes'),
+        createGitattributes()
     );
 
     fs.writeFileSync(
@@ -553,6 +568,11 @@ pip install ${packageName}
     fs.writeFileSync(
         path.join(projectPath, '.vscode', 'extensions.json'),
         createVSCodeExtensions()
+    );
+
+    fs.writeFileSync(
+        path.join(projectPath, '.vscode', '.setup_pending'),
+        ''
     );
 
     progress.report({ message: 'Package structure created successfully!' });

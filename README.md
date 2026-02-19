@@ -38,6 +38,22 @@ Creates a focused package structure with:
 - **Type hints**: py.typed marker file for PEP 561 compliance
 - **GitHub Actions ready**: CI/CD templates included
 
+### 🎨 Package Types
+When creating packages (standalone or in monorepo), choose between:
+
+#### **Backend/Logic Package** (`auth-shared`)
+- Python package with core logic, utilities, models
+- Store, token management, API clients
+- No UI components - pure business logic
+- Example: `auth-shared`, `data-utils`, `common-models`
+
+#### **UI Components Package** (`auth-ui`)
+- React/TypeScript components library
+- Reusable UI components, forms, buttons
+- Can import backend packages for logic
+- Lightweight, presentational components only
+- Example: `auth-ui`, `shared-components`, `design-system`
+
 ## Usage
 
 ### Creating a New Project
@@ -71,32 +87,62 @@ Once you have a monorepo, you can add shared packages using the interactive comm
 
 1. Open your monorepo project in VS Code
 2. Run **"Python Generator: Add Package to Monorepo"** from the Command Palette
-3. Enter the package name (e.g., `auth-share`, `data-utils`, `common-models`)
+3. **Select package type**:
+   - 🔧 **Backend/Logic Package** - Python package for core logic
+   - 🎨 **UI Components Package** - React/TypeScript components
+4. Enter the package name (e.g., `auth-shared`, `data-utils` for backend; `auth-ui`, `design-system` for UI)
    - Use lowercase letters, numbers, hyphens, or underscores
    - Must start with a letter
    - Cannot be a Python reserved keyword
-4. Optionally enter a description
-5. The package is created in `packages/your-package-name/` with:
-   - Modern `src/` layout structure
-   - pyproject.toml configuration
-   - Test setup with pytest
-   - README and documentation
-6. Start developing your shared library in `src/your_package_name/core.py`
+5. Optionally enter a description
+6. The package is created with appropriate structure
 
-**Example Package Structure:**
+**Backend Package Structure:**
 ```
-packages/
-└── auth-share/
-    ├── src/
-    │   └── auth_share/
-    │       ├── __init__.py
-    │       └── core.py        ← Your logic here
-    ├── tests/
-    │   ├── __init__.py
-    │   └── test_core.py
-    ├── pyproject.toml
-    ├── requirements.txt
-    └── README.md
+packages/auth-shared/
+├── src/
+│   └── auth_shared/
+│       ├── __init__.py
+│       └── core.py          # Store, tokens, API logic
+├── tests/
+│   ├── __init__.py
+│   └── test_core.py
+├── pyproject.toml
+├── requirements.txt
+└── README.md
+```
+
+**UI Package Structure:**
+```
+packages/auth-ui/
+├── src/
+│   ├── index.tsx            # Main exports
+│   ├── types.ts             # TypeScript types
+│   └── components/
+│       ├── Provider.tsx     # Context provider
+│       ├── Button.tsx       # Button component
+│       └── Form.tsx         # Form component
+├── package.json             # NPM dependencies
+├── tsconfig.json            # TypeScript config
+└── README.md
+```
+
+**Using UI Package in Frontend:**
+```bash
+cd frontend/web
+npm install ../../packages/auth-ui
+```
+
+```tsx
+import { AuthUiProvider, AuthUiButton } from 'auth-ui';
+
+function App() {
+  return (
+    <AuthUiProvider>
+      <AuthUiButton variant="primary">Sign In</AuthUiButton>
+    </AuthUiProvider>
+  );
+}
 ```
 
 **Listing All Packages:**

@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { createPythonProject, setupPythonProject, startServers, addPackageToMonorepo, listMonorepoPackages } from './commands';
 import { checkPrerequisites, showPrerequisiteDialog, installMissingExtensions } from './utils';
+
+const execAsync = promisify(exec);
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Python Monorepo Generator extension is now active!');
@@ -128,17 +132,71 @@ async function checkAndOpenWelcome() {
         if (hasWelcomeMarker) {
             await new Promise(resolve => setTimeout(resolve, 1500));
         }
+
+        const gitPath = path.join(workspaceFolder.uri.fsPath, '.git');
+        const hasGitRepository = fs.existsSync(gitPath);
+        const hasMonorepoMarker = fs.existsSync(path.join(workspaceFolder.uri.fsPath, 'backend', 'main.py'));
+        const hasPackageMarkers = fs.existsSync(path.join(workspaceFolder.uri.fsPath, 'src')) &&
+            (fs.existsSync(path.join(workspaceFolder.uri.fsPath, 'pyproject.toml')) ||
+             fs.existsSync(path.join(workspaceFolder.uri.fsPath, 'package.json')));
+        const entityLabel = hasMonorepoMarker ? 'Monorepo' : (hasPackageMarkers ? 'Package' : 'Project');
+        const setupNowLabel = hasMonorepoMarker
+            ? 'Setup Monorepo Now'
+            : hasPackageMarkers
+                ? 'Setup Package Now'
+                : 'Setup Project Now';
         
-        // Ask user if they want to setup the project now
+        const actions = hasGitRepository
+            ? [setupNowLabel, 'Later']
+            : [setupNowLabel, 'Initialize Git Now', 'Later'];
+
         const choice = await vscode.window.showInformationMessage(
-            '✅ Project created successfully! 🚀 Ready to setup? Install dependencies and create initial commit automatically.',
-            'Setup Now',
-            'Later'
+            `✅ ${entityLabel} created successfully! 🚀 Ready to setup? Install dependencies and optionally create an initial commit.`,
+            ...actions
         );
-        
-        if (choice === 'Setup Now') {
+
+        if (choice === setupNowLabel) {
             vscode.commands.executeCommand('pythonMonorepoGenerator.setupProject').then(() => {}, () => {});
+        } else if (choice === 'Initialize Git Now') {
+            const initialized = await initializeLocalGitRepository(workspaceFolder.uri.fsPath);
+            if (initialized) {
+                const followUp = await vscode.window.showInformationMessage(
+                    `✅ Local Git repository initialized. Do you want to continue with ${entityLabel.toLowerCase()} setup now?`,
+                    setupNowLabel,
+                    'Later'
+                );
+
+                if (followUp === setupNowLabel) {
+                    vscode.commands.executeCommand('pythonMonorepoGenerator.setupProject').then(() => {}, () => {});
+                }
+            }
         }
+    }
+}
+
+async function initializeLocalGitRepository(projectPath: string): Promise<boolean> {
+    try {
+        try {
+            await execAsync('git init -b main', { cwd: projectPath });
+        } catch {
+            await execAsync('git init', { cwd: projectPath });
+
+            try {
+                await execAsync('git symbolic-ref HEAD refs/heads/main', { cwd: projectPath });
+            } catch {
+            }
+
+            try {
+                await execAsync('git branch -M main', { cwd: projectPath });
+            } catch {
+            }
+        }
+
+        return true;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to initialize local Git repository: ${message}`);
+        return false;
     }
 }
 
